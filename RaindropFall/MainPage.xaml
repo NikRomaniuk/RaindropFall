@@ -1,13 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="RaindropFall.MainPage">
+<ContentPage xmlns = "http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x = "http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class = "RaindropFall.MainPage"
+             Title = "Raindrop Fall">
 
-    <Grid RowDefinitions="Auto, *, Auto, Auto" RowSpacing="15" Padding="20">
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-        </VerticalStackLayout>
+    <Grid>
+        
+        <!-- Main Character -->
+        <BoxView x:Name = "DropCharacter"
+                 Color = "Cyan"
+                 WidthRequest = "30"
+                 HeightRequest = "30"
+                 CornerRadius = "5"
+                 HorizontalOptions = "Center"
+                 VerticalOptions = "Center" />
     </Grid>
 
 </ContentPage>
