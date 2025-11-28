@@ -14,7 +14,9 @@ namespace RaindropFall
         private double testDropX = 0.8; // Initial X position (80% from left)
         private double testDropY = 0.1; // Initial Y position (10% from top)
         private double testDropVelocityX, testDropVelocityY;
-        private const double testDropSpeed = 0.2; // 0.5 means 50% of the screen width in 1 second
+        // Pixels per second
+        // This speed will be consistent across devices
+        private const double testDropSpeed = 200.0;
         private const double testDropSize = 25; // Pixel size
 
         // Direction Change Timer
@@ -54,7 +56,13 @@ namespace RaindropFall
         /// </summary>
         private void OnUpdate(double deltaTime)
         {
-            // --- Get position ---
+            // Calculate proportional size based on screen dimensions
+            // for accurate boundary checks
+            double sceneWidth = Scene.Width;
+            double sceneHeight = Scene.Height;
+
+            double testDropWidthRatio = testDropSize / sceneWidth;
+            double testDropHeightRatio = testDropSize / sceneHeight;
 
             // Update the direction timer
             directionTimer += deltaTime;
@@ -65,17 +73,18 @@ namespace RaindropFall
                 directionTimer = 0; // Reset the timer
             }
 
-            // Apply movement (using the stored velocity)
-            testDropX += testDropVelocityX * deltaTime;
-            testDropY += testDropVelocityY * deltaTime;
+            // --- Calculate Movement ---
 
-            // Calculate proportional size based on screen dimensions
-            // for accurate boundary checks
-            double sceneWidth = Scene.Width;
-            double sceneHeight = Scene.Height;
+            // Calculate the distance the object should travel this frame (in pixels)
+            double distanceDIPs = testDropSpeed * deltaTime;
 
-            double testDropWidthRatio = testDropSize / sceneWidth;
-            double testDropHeightRatio = testDropSize / sceneHeight;
+            // moveX = Distance / Total Width
+            double moveX = testDropVelocityX * (distanceDIPs / sceneWidth);
+            double moveY = testDropVelocityY * (distanceDIPs / sceneHeight);
+
+            // Apply movement
+            testDropX += moveX;
+            testDropY += moveY;
 
             // If testDrop cords beyond screen edge
             // Right edge
@@ -83,24 +92,29 @@ namespace RaindropFall
             {
                 testDropVelocityX = -Math.Abs(testDropVelocityX);
                 testDropX = 1.0 - testDropWidthRatio;
+                // Get new direction vector
+                ChangeDirection();
             }
             // Left edge
             else if (testDropX <= 0.0)
             {
                 testDropVelocityX = Math.Abs(testDropVelocityX);
                 testDropX = 0.0;
+                ChangeDirection();
             }
             // Bottom edge
             if (testDropY + testDropHeightRatio >= 1.0)
             {
                 testDropVelocityY = -Math.Abs(testDropVelocityY);
                 testDropY = 1.0 - testDropHeightRatio;
+                ChangeDirection();
             }
             // Top edge
             else if (testDropY <= 0.0)
             {
                 testDropVelocityY = Math.Abs(testDropVelocityY);
                 testDropY = 0.0;
+                ChangeDirection();
             }
 
             // --- Update the UI ---
@@ -126,8 +140,8 @@ namespace RaindropFall
             double angle = random.NextDouble() * 2 * Math.PI;
 
             // Use trigonometry to calculate the X and Y components of the velocity vector
-            testDropVelocityX = testDropSpeed * Math.Cos(angle);
-            testDropVelocityY = testDropSpeed * Math.Sin(angle);
+            testDropVelocityX = Math.Cos(angle);
+            testDropVelocityY = Math.Sin(angle);
         }
     }
 }
