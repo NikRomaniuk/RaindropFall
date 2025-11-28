@@ -1,6 +1,6 @@
 ﻿namespace RaindropFall
 {
-    public class MainCharacter
+    class Player
     {
 
     }

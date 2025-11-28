@@ -5,6 +5,7 @@
         public App()
         {
             InitializeComponent();
+            GlobalEvents.InitializeTimer();
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
