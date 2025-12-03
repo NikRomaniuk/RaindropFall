@@ -1,5 +1,5 @@
-﻿
-using Microsoft.Maui.Layouts;
+﻿using Microsoft.Maui.Layouts;
+using System;
 
 namespace RaindropFall
 {
@@ -10,19 +10,9 @@ namespace RaindropFall
         private double playerY = 0.5;
         private const double playerSize = 30; // Pixel size
 
-        // TestDrop (Red Square)
-        private double testDropX = 0.8; // Initial X position (80% from left)
-        private double testDropY = 0.1; // Initial Y position (10% from top)
-        private double testDropVelocityX, testDropVelocityY;
-        // Pixels per second
-        // This speed will be consistent across devices
-        private const double testDropSpeed = 200.0;
-        private const double testDropSize = 25; // Pixel size
+        // TestDrop (Red (But not obviously red) Square)
+        private FlowObject testObstacle;
 
-        // Direction Change Timer
-        private double directionTimer = 0;
-        private const double directionChangeInterval = 2.0; // In seconds
-        
         // Other
         private readonly Random random = new Random(); // Random class object
 
@@ -30,8 +20,10 @@ namespace RaindropFall
         {
             InitializeComponent();
 
-            // Set initial velocity
-            ChangeDirection();
+            // But still red in this case
+            testObstacle = new FlowObject(Colors.Red, 20, 100);
+            Scene.Children.Add(testObstacle.Visual);
+            SpawnFlowObject(testObstacle);
         }
 
         // --- Event Subscription Management ---
@@ -41,90 +33,33 @@ namespace RaindropFall
         {
             base.OnAppearing();
             GlobalEvents.Update += OnUpdate;
-            System.Diagnostics.Debug.WriteLine("GameView subscribed to Update");
+            System.Diagnostics.Debug.WriteLine("Scene subscribed to Update");
         }
         // Override default method
         protected override void OnDisappearing()
         {
             GlobalEvents.Update -= OnUpdate;
             base.OnDisappearing();
-            System.Diagnostics.Debug.WriteLine("GameView unsubscribed from Update");
+            System.Diagnostics.Debug.WriteLine("Scene unsubscribed from Update");
         }
+
+        // --- Game Logic ---
 
         /// <summary>
         /// Invokes every Frame
         /// </summary>
         private void OnUpdate(double deltaTime)
         {
-            // Calculate proportional size based on screen dimensions
-            // for accurate boundary checks
-            double sceneWidth = Scene.Width;
-            double sceneHeight = Scene.Height;
+            // Update Obstacle
+            bool isStillActive = testObstacle.Update(deltaTime, Scene.Height);
 
-            double testDropWidthRatio = testDropSize / sceneWidth;
-            double testDropHeightRatio = testDropSize / sceneHeight;
-
-            // Update the direction timer
-            directionTimer += deltaTime;
-
-            if (directionTimer >= directionChangeInterval)
+            if (!isStillActive)
             {
-                ChangeDirection();
-                directionTimer = 0; // Reset the timer
-            }
-
-            // --- Calculate Movement ---
-
-            // Calculate the distance the object should travel this frame (in pixels)
-            double distanceDIPs = testDropSpeed * deltaTime;
-
-            // moveX = Distance / Total Width
-            double moveX = testDropVelocityX * (distanceDIPs / sceneWidth);
-            double moveY = testDropVelocityY * (distanceDIPs / sceneHeight);
-
-            // Apply movement
-            testDropX += moveX;
-            testDropY += moveY;
-
-            // If testDrop cords beyond screen edge
-            // Right edge
-            if (testDropX + testDropWidthRatio >= 1.0)
-            {
-                testDropVelocityX = -Math.Abs(testDropVelocityX);
-                testDropX = 1.0 - testDropWidthRatio;
-                // Get new direction vector
-                ChangeDirection();
-            }
-            // Left edge
-            else if (testDropX <= 0.0)
-            {
-                testDropVelocityX = Math.Abs(testDropVelocityX);
-                testDropX = 0.0;
-                ChangeDirection();
-            }
-            // Bottom edge
-            if (testDropY + testDropHeightRatio >= 1.0)
-            {
-                testDropVelocityY = -Math.Abs(testDropVelocityY);
-                testDropY = 1.0 - testDropHeightRatio;
-                ChangeDirection();
-            }
-            // Top edge
-            else if (testDropY <= 0.0)
-            {
-                testDropVelocityY = Math.Abs(testDropVelocityY);
-                testDropY = 0.0;
-                ChangeDirection();
+                // Respawn object on its despawn
+                SpawnFlowObject(testObstacle);
             }
 
             // --- Update the UI ---
-
-            // Test Drop
-            // Sets the object position
-            // based on its constantly updating proportional coordinates and its fixed size
-            AbsoluteLayout.SetLayoutBounds(TestMove, new Rect(testDropX, testDropY, testDropSize, testDropSize));
-            // Tells the AbsoluteLayout container how to interpret object position
-            AbsoluteLayout.SetLayoutFlags(TestMove, AbsoluteLayoutFlags.PositionProportional);
 
             // Main Character
             AbsoluteLayout.SetLayoutBounds(DropCharacter, new Rect(playerX, playerY, playerSize, playerSize));
@@ -132,16 +67,15 @@ namespace RaindropFall
         }
 
         /// <summary>
-        /// Gets random horizontal velocity for the test drop
+        /// Spawn FlowObject with random horizontal position
         /// </summary>
-        private void ChangeDirection()
+        private void SpawnFlowObject(FlowObject obj)
         {
-            // Generate a random angle
-            double angle = random.NextDouble() * 2 * Math.PI;
+            // Get random X Position
+            double randomX = 0.1 + (random.NextDouble() * 0.8);
+            obj.Spawn(randomX);
 
-            // Use trigonometry to calculate the X and Y components of the velocity vector
-            testDropVelocityX = Math.Cos(angle);
-            testDropVelocityY = Math.Sin(angle);
+            Console.WriteLine("Flow Object Spawned!");
         }
     }
 }
