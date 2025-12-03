@@ -1,4 +1,4 @@
-﻿using System.Timers;
+﻿using System.Diagnostics;
 
 namespace RaindropFall
 {
@@ -15,14 +15,17 @@ namespace RaindropFall
         // '!' is a null-forgiving operator
         // private static System.Timers.Timer globalTimer = null!;
         private static IDispatcherTimer globalTimer;
-        private static IDispatcherTimer testTimer;
+
+        // Stopwatch to measure real time passed
+        private static Stopwatch gameStopwatch = new Stopwatch();
+        private static double lastFrameTime = 0;
 
         // Global Events that some interactive game objects will subscribe to
         // '?' declares it as a nullable event
         public static event Action<double>? Update;
 
-        static int seconds = 0;
         static int frames = 0;
+        static double timeAccumulator = 0;
 
         /// <summary>
         /// Initializes and starts the game timer (Once per app load)
@@ -40,23 +43,11 @@ namespace RaindropFall
             // Start the timer only if it's not already running
             if (!globalTimer.IsRunning)
             {
+                gameStopwatch.Start();
+                lastFrameTime = gameStopwatch.Elapsed.TotalSeconds;
+
                 globalTimer.Start();
-                System.Diagnostics.Debug.WriteLine("Global Timer Started");
-            }
-
-            if (testTimer == null)
-            {
-                testTimer = Dispatcher.GetForCurrentThread().CreateTimer();
-                testTimer.Interval = TimeSpan.FromSeconds(1);
-                testTimer.Tick += Test;
-                testTimer.IsRepeating = true;
-            }
-
-            // Start the timer only if it's not already running
-            if (!testTimer.IsRunning)
-            {
-                testTimer.Start();
-                System.Diagnostics.Debug.WriteLine("test Timer Started");
+                Debug.WriteLine("Global Timer & Stopwatch Started");
             }
         }
 
@@ -66,7 +57,8 @@ namespace RaindropFall
         public static void Stop()
         {
             globalTimer?.Stop();
-            System.Diagnostics.Debug.WriteLine("Global Timer Stopped");
+            gameStopwatch?.Stop();
+            Debug.WriteLine("Global Timer Stopped");
         }
 
         /// <summary>
@@ -74,22 +66,31 @@ namespace RaindropFall
         /// </summary>
         private static void OnTick(object sender, EventArgs e)
         {
-            // Calculate DeltaTime
-            double deltaTime = 1.0 / TargetFPS;
+            // --- Main Body ---
+            // Get current time
+            double currentTime = gameStopwatch.Elapsed.TotalSeconds;
+
+            // Calculate how much time passed since last frame (Delta)
+            double deltaTime = currentTime - lastFrameTime;
+            if (deltaTime > 0.1) deltaTime = 0.1; // Max is 100ms
+
+            // Update lastFrameTime for the next tick
+            lastFrameTime = currentTime;
+
+            
 
             // Invoke the global Update event
             Update?.Invoke(deltaTime);
+
+            // --- FPS Counter ---
             frames++;
-        }
-
-        private static void Test(object sender, EventArgs e)
-        {
-            seconds++;
-
-            System.Diagnostics.Debug.WriteLine("Frames: " + frames);
-            System.Diagnostics.Debug.WriteLine("Seconds: " + seconds);
-
-            frames = 0;
+            timeAccumulator += deltaTime;
+            if (timeAccumulator >= 1.0)
+            {
+                Debug.WriteLine($"FPS: {frames}");
+                frames = 0;
+                timeAccumulator = 0;
+            }
         }
     }
 }
