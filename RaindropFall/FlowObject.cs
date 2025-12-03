@@ -9,7 +9,7 @@ namespace RaindropFall
         public BoxView Visual { get; set; }
 
         // Position
-        public double X { get; set; }
+        public double X { get; set; } 
         public double Y { get; set; }
 
         // Properties
@@ -40,7 +40,7 @@ namespace RaindropFall
         /// <summary>
         /// Spawns the Object
         /// </summary>
-        public void Spawn(double startX)
+        public virtual void Spawn(double startX)
         {
             X = startX;
             Y = 1.2;
@@ -84,7 +84,7 @@ namespace RaindropFall
             return true;
         }
 
-        private void UpdateUI()
+        public virtual void UpdateUI()
         {
             // Sets the object position
             // based on its constantly updating proportional coordinates and its fixed size

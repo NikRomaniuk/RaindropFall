@@ -10,8 +10,8 @@ namespace RaindropFall
         private double playerY = 0.5;
         private const double playerSize = 30; // Pixel size
 
-        // TestDrop (Red (But not obviously red) Square)
-        private FlowObject testObstacle;
+        // Group for testing (contains extremely red (But not obviously red) squares)
+        private FlowGroup testGroup;
 
         // Other
         private readonly Random random = new Random(); // Random class object
@@ -20,10 +20,23 @@ namespace RaindropFall
         {
             InitializeComponent();
 
-            // But still red in this case
-            testObstacle = new FlowObject(Colors.Red, 20, 100);
-            Scene.Children.Add(testObstacle.Visual);
-            SpawnFlowObject(testObstacle);
+            // Create a new Group (object formation)
+            testGroup = new FlowGroup(200);
+
+            // Build the Group
+            // With "V" formation forexample
+
+            testGroup.AddObstacle(0.0, 0.0, Colors.Red, 25);
+            testGroup.AddObstacle(-0.15, 0.1, Colors.DarkRed, 25);
+            testGroup.AddObstacle(0.15, 0.1, Colors.PaleVioletRed, 25);
+
+            // Add all visual elements to the Scene
+            Scene.Children.Add(testGroup.Visual);
+            for (int i = 0; i < testGroup.Members.Count; i++)
+            {
+                Scene.Children.Add(testGroup.Members[i].ChildObject.Visual);
+            }
+            SpawnFlowGroup(testGroup);
         }
 
         // --- Event Subscription Management ---
@@ -50,13 +63,13 @@ namespace RaindropFall
         /// </summary>
         private void OnUpdate(double deltaTime)
         {
-            // Update Obstacle
-            bool isStillActive = testObstacle.Update(deltaTime, Scene.Height);
+            // Update the Group
+            bool isStillActive = testGroup.Update(deltaTime, Scene.Height);
 
             if (!isStillActive)
             {
-                // Respawn object on its despawn
-                SpawnFlowObject(testObstacle);
+                // Respawn Group on its despawn
+                SpawnFlowGroup(testGroup);
             }
 
             // --- Update the UI ---
@@ -76,6 +89,18 @@ namespace RaindropFall
             obj.Spawn(randomX);
 
             Console.WriteLine("Flow Object Spawned!");
+        }
+
+        /// <summary>
+        /// Spawn FlowObject with random horizontal position
+        /// </summary>
+        private void SpawnFlowGroup(FlowObject obj)
+        {
+            // Get fixed X Position (Center)
+            double X = 0.5;
+            obj.Spawn(X);
+
+            Console.WriteLine("Flow Group Spawned!");
         }
     }
 }
