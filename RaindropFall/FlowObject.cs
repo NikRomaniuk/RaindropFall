@@ -3,21 +3,11 @@ using Microsoft.Maui.Graphics;
 
 namespace RaindropFall
 {
-    public class FlowObject
+    public class FlowObject : GameObject
     {
-        // UI
-        public BoxView Visual { get; set; }
-
-        // Position
-        public double X { get; set; } 
-        public double Y { get; set; }
-
-        // Properties
-        public double Size { get; set; } // In Pixels
         public double Speed { get; set; } // Pixels per second
-        public bool IsActive { get; set; } // To despawn it later on
 
-        public FlowObject(Color color, double size, double speed)
+        public FlowObject(Color color, double size, double speed) : base(0, 1.2, size)
         {
             Size = size;
             Speed = speed;
@@ -51,7 +41,7 @@ namespace RaindropFall
         /// <summary>
         /// Called every frame to move the object. Returns False if object has despawned
         /// </summary>
-        public bool Update(double deltaTime, double gameAreaHeight)
+        public override bool Update(double deltaTime)
         {
             if (!IsActive) return false;
 
@@ -61,15 +51,15 @@ namespace RaindropFall
             // Convert to Proportional movement
             // Formula: ProportionalChange = Distance / (GameHeight - ObjectHeight)
             // AbsoluteLayout available space calculated as: ParentSize - ChildSize
-            double effectiveHeight = gameAreaHeight - Size;
+            double effectiveHeight = SceneProperties.Height - Size;
 
             // Avoid divide by zero errors
             if (effectiveHeight <= 0) return true;
 
-            double proportionalChange = distance / effectiveHeight;
+            double changeY = distance / effectiveHeight;
 
             // Move Upwards
-            Y -= proportionalChange;
+            Y -= changeY;
 
             // Update the UI and its Position on the screen
             UpdateUI();

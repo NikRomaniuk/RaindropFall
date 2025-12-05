@@ -6,9 +6,7 @@ namespace RaindropFall
     public partial class MainPage : ContentPage
     {
         // Player (Cyan Square)
-        private double playerX = 0.5;
-        private double playerY = 0.5;
-        private const double playerSize = 30; // Pixel size
+        private Player playerCharacter;
 
         // Group for testing (contains extremely red (But not obviously red) squares)
         private FlowGroup testGroup;
@@ -19,6 +17,12 @@ namespace RaindropFall
         public MainPage()
         {
             InitializeComponent();
+            this.Loaded += OnPageLoaded;
+            // --- Setup Scene Properties ---
+
+            // --- Player ---
+            // Initialize
+            playerCharacter = new Player(DropCharacter, 0.5, 0.85, 30);
 
             // Create a new Group (object formation)
             testGroup = new FlowGroup(200);
@@ -42,18 +46,49 @@ namespace RaindropFall
         // --- Event Subscription Management ---
 
         // Override default method
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-            GlobalEvents.Update += OnUpdate;
-            System.Diagnostics.Debug.WriteLine("Scene subscribed to Update");
-        }
-        // Override default method
         protected override void OnDisappearing()
         {
             GlobalEvents.Update -= OnUpdate;
             base.OnDisappearing();
             System.Diagnostics.Debug.WriteLine("Scene unsubscribed from Update");
+        }
+        // On Page Loaded
+        private void OnPageLoaded(object sender, EventArgs e)
+        {
+            SceneProperties.Height = Scene.Height;
+            SceneProperties.Width = Scene.Width;
+            System.Diagnostics.Debug.WriteLine("Scene Properties set");
+
+            GlobalEvents.Update += OnUpdate;
+            System.Diagnostics.Debug.WriteLine("Scene subscribed to Update");
+
+            System.Diagnostics.Debug.WriteLine("Page loaded");
+        }
+
+        // --- Input Handling ---
+
+        /// <summary>
+        /// Sets the Player's direction state to Left when pressed
+        /// </summary>
+        private void OnLeftAreaPressed(object sender, PointerEventArgs e)
+        {
+            playerCharacter.SetDirection(Direction.Left);
+        }
+
+        /// <summary>
+        /// Sets the Player's direction state to Right when pressed
+        /// </summary>
+        private void OnRightAreaPressed(object sender, PointerEventArgs e)
+        {
+            playerCharacter.SetDirection(Direction.Right);
+        }
+
+        /// <summary>
+        /// Stops the Player's movement when released or the pointer exits
+        /// </summary>
+        private void OnInputAreaReleased(object sender, PointerEventArgs e)
+        {
+            playerCharacter.Stop();
         }
 
         // --- Game Logic ---
@@ -64,7 +99,7 @@ namespace RaindropFall
         private void OnUpdate(double deltaTime)
         {
             // Update the Group
-            bool isStillActive = testGroup.Update(deltaTime, Scene.Height);
+            bool isStillActive = testGroup.Update(deltaTime);
 
             if (!isStillActive)
             {
@@ -75,8 +110,7 @@ namespace RaindropFall
             // --- Update the UI ---
 
             // Main Character
-            AbsoluteLayout.SetLayoutBounds(DropCharacter, new Rect(playerX, playerY, playerSize, playerSize));
-            AbsoluteLayout.SetLayoutFlags(DropCharacter, AbsoluteLayoutFlags.PositionProportional);
+            playerCharacter.Update(deltaTime);
         }
 
         /// <summary>

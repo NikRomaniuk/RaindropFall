@@ -7,7 +7,35 @@
     <AbsoluteLayout x:Name = "Scene" 
                     VerticalOptions = "Fill" 
                     HorizontalOptions = "Fill">
+
+        <!-- Touch Input Areas -->
         
+        <!-- Left Half -->
+        <BoxView x:Name="LeftInputArea"
+                 Color = "Green" 
+                 AbsoluteLayout.LayoutFlags = "All"
+                 AbsoluteLayout.LayoutBounds = "0, 0, 0.5, 1">
+            <BoxView.GestureRecognizers>
+                <!-- Pointer events for continuous movement: triggers when pressed and released -->
+                <PointerGestureRecognizer PointerPressed = "OnLeftAreaPressed" />
+                <PointerGestureRecognizer PointerReleased = "OnInputAreaReleased" />
+                <PointerGestureRecognizer PointerExited = "OnInputAreaReleased" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- Right Half -->
+        <BoxView x:Name="RightInputArea"
+                 Color = "Yellow" 
+                 AbsoluteLayout.LayoutFlags = "All"
+                 AbsoluteLayout.LayoutBounds = "1, 0, 0.5, 1">
+            <BoxView.GestureRecognizers>
+                <!-- Pointer events for continuous movement: triggers when pressed and released -->
+                <PointerGestureRecognizer PointerPressed = "OnRightAreaPressed" />
+                <PointerGestureRecognizer PointerReleased = "OnInputAreaReleased" />
+                <PointerGestureRecognizer PointerExited = "OnInputAreaReleased" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
         <!-- Main Character -->
         <BoxView x:Name = "DropCharacter"
                  Color = "Cyan"

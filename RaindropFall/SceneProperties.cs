@@ -1,7 +1,8 @@
 ﻿namespace RaindropFall
 {
-    public class SceneProperties
+    public static class SceneProperties
     {
-
+        public static double Height;
+        public static double Width;
     }
 }
