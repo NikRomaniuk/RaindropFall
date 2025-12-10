@@ -12,18 +12,19 @@ namespace RaindropFall
         // Calculate the interval in milliseconds
         private const double IntervalMs = 1000.0 / TargetFPS;
 
+        // How much time passed since last frame (deltaTime)
+        // Fixed value
+        private const double FixedDeltaTime = 1.0 / TargetFPS;
+
         // '!' is a null-forgiving operator
         // private static System.Timers.Timer globalTimer = null!;
         private static IDispatcherTimer globalTimer;
-
-        // Stopwatch to measure real time passed
-        private static Stopwatch gameStopwatch = new Stopwatch();
-        private static double lastFrameTime = 0;
 
         // Global Events that some interactive game objects will subscribe to
         // '?' declares it as a nullable event
         public static event Action<double>? Update;
 
+        // Testing
         static int frames = 0;
         static double timeAccumulator = 0;
 
@@ -43,11 +44,8 @@ namespace RaindropFall
             // Start the timer only if it's not already running
             if (!globalTimer.IsRunning)
             {
-                gameStopwatch.Start();
-                lastFrameTime = gameStopwatch.Elapsed.TotalSeconds;
-
                 globalTimer.Start();
-                Debug.WriteLine("Global Timer & Stopwatch Started");
+                Debug.WriteLine("Global Timer Started");
             }
         }
 
@@ -57,7 +55,6 @@ namespace RaindropFall
         public static void Stop()
         {
             globalTimer?.Stop();
-            gameStopwatch?.Stop();
             Debug.WriteLine("Global Timer Stopped");
         }
 
@@ -67,17 +64,7 @@ namespace RaindropFall
         private static void OnTick(object sender, EventArgs e)
         {
             // --- Main Body ---
-            // Get current time
-            double currentTime = gameStopwatch.Elapsed.TotalSeconds;
-
-            // Calculate how much time passed since last frame (Delta)
-            double deltaTime = currentTime - lastFrameTime;
-            if (deltaTime > 0.1) deltaTime = 0.1; // Max is 100ms
-
-            // Update lastFrameTime for the next tick
-            lastFrameTime = currentTime;
-
-            
+            double deltaTime = FixedDeltaTime;
 
             // Invoke the global Update event
             Update?.Invoke(deltaTime);

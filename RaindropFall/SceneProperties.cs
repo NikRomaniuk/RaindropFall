@@ -10,26 +10,23 @@
         public static double GameHeight;
         public static double GameWidth;
 
-        // Target Aspect Ratio (16/9 for portriat)
+        // Target Aspect Ratio (16/9 for Portriat)
         // Landscape is a bit cursed, but it's not targeted orientation anyway
-        public const double TARGET_ASPECT_RATIO = 16.0 / 9.0;
+        public const double TARGET_W_UNITS = 9.0;
+        public const double TARGET_H_UNITS = 16.0;
 
         public static void SetGameAreaDimensions()
         {
-            double actualAspectRatio = Width / Height;
+            // Calculate the largest possible scale factor
+            // This ensures that GameArea fits entirely within the actual screen bounds
+            double scaleFactor = Math.Min(
+                Width / TARGET_W_UNITS,
+                Height / TARGET_H_UNITS
+            );
 
-            if (actualAspectRatio < TARGET_ASPECT_RATIO)
-            {
-                // Screen is taller than target
-                GameWidth = Width;
-                GameHeight = Width * (1.0 / TARGET_ASPECT_RATIO);
-            }
-            else
-            {
-                // Screen is wider than target
-                GameWidth = Height;
-                GameHeight = Height * TARGET_ASPECT_RATIO;
-            }
+            // Apply the scale factor to the target units to get the final pixel dimensions
+            GameWidth = TARGET_W_UNITS * scaleFactor;
+            GameHeight = TARGET_H_UNITS * scaleFactor;
         }
     }
 }
