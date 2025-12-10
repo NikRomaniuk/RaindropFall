@@ -39,6 +39,22 @@ namespace RaindropFall
         }
 
         /// <summary>
+        /// Called every frame to move the object and its children
+        /// Returns False if group has despawned
+        /// </summary>
+        public override bool Update(double deltaTime)
+        {
+            bool isStillActive = base.Update(deltaTime);
+
+            if (isStillActive)
+            {
+                UpdateUI();
+            }
+
+            return isStillActive;
+        }
+
+        /// <summary>
         /// Overrides the base UpdateUI to move ALL children relative to the Group Center (Anchor)
         /// </summary>
         public override void UpdateUI()

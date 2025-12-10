@@ -39,7 +39,8 @@ namespace RaindropFall
         }
 
         /// <summary>
-        /// Called every frame to move the object. Returns False if object has despawned
+        /// Called every frame to move the object
+        /// Returns False if object has despawned
         /// </summary>
         public override bool Update(double deltaTime)
         {
