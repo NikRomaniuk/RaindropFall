@@ -51,7 +51,7 @@ namespace RaindropFall
             // Convert to Proportional movement
             // Formula: ProportionalChange = Distance / (GameHeight - ObjectHeight)
             // AbsoluteLayout available space calculated as: ParentSize - ChildSize
-            double effectiveHeight = SceneProperties.Height - Size;
+            double effectiveHeight = SceneProperties.GameHeight - Size;
 
             // Avoid divide by zero errors
             if (effectiveHeight <= 0) return true;

@@ -57,7 +57,12 @@ namespace RaindropFall
         {
             SceneProperties.Height = Scene.Height;
             SceneProperties.Width = Scene.Width;
+            SceneProperties.SetGameAreaDimensions();
             System.Diagnostics.Debug.WriteLine("Scene Properties set");
+
+            Scene.WidthRequest = SceneProperties.GameWidth;
+            Scene.HeightRequest = SceneProperties.GameHeight;
+            System.Diagnostics.Debug.WriteLine("Scene Properties applied to the Scene");
 
             GlobalEvents.Update += OnUpdate;
             System.Diagnostics.Debug.WriteLine("Scene subscribed to Update");

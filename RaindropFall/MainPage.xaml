@@ -3,10 +3,8 @@
              xmlns:x = "http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class = "RaindropFall.MainPage"
              Title = "Raindrop Fall">
-
-    <AbsoluteLayout x:Name = "Scene" 
-                    VerticalOptions = "Fill" 
-                    HorizontalOptions = "Fill">
+    <Grid BackgroundColor = "Black">
+        <AbsoluteLayout x:Name = "Scene">
 
         <!-- Touch Input Areas -->
         
@@ -44,6 +42,7 @@
                  CornerRadius = "5"
                  AbsoluteLayout.LayoutFlags = "PositionProportional"
                  AbsoluteLayout.LayoutBounds = "0.5, 0.5, 30, 30" />
-    </AbsoluteLayout>
+        </AbsoluteLayout>
+    </Grid>
 
 </ContentPage>

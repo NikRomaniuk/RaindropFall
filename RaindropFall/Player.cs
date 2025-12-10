@@ -32,7 +32,7 @@ namespace RaindropFall
 
             // Calculate distance to move this frame
             double distance = Speed * deltaTime;
-            double effectiveWidth = SceneProperties.Width - Size;
+            double effectiveWidth = SceneProperties.GameWidth - Size;
             double changeX = distance / effectiveWidth;
 
             if (CurrentDirection == Direction.Left) { changeX *= -1; }      // Move Left
