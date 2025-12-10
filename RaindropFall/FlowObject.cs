@@ -5,7 +5,7 @@ namespace RaindropFall
 {
     public class FlowObject : GameObject
     {
-        public double Speed { get; set; } // Pixels per second
+        public double Speed { get; set; } // Proportional units per second (100 - 100% Screen)
 
         public FlowObject(Color color, double size, double speed) : base(0, 1.2, size)
         {
@@ -46,18 +46,9 @@ namespace RaindropFall
         {
             if (!IsActive) return false;
 
-            // Calculate distance to move this frame
-            double distance = Speed * deltaTime;
-
-            // Convert to Proportional movement
-            // Formula: ProportionalChange = Distance / (GameHeight - ObjectHeight)
-            // AbsoluteLayout available space calculated as: ParentSize - ChildSize
-            double effectiveHeight = SceneProperties.GameHeight - Size;
-
-            // Avoid divide by zero errors
-            if (effectiveHeight <= 0) return true;
-
-            double changeY = distance / effectiveHeight;
+            // Calculate the distance to move this frame
+            // Formula: ProportionalChange = ProportionalSpeed * deltaTime
+            double changeY = (Speed / 100) * deltaTime;
 
             // Move Upwards
             Y -= changeY;

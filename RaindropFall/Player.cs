@@ -13,13 +13,14 @@ namespace RaindropFall
         // Player Properties 
         public Direction CurrentDirection { get; set; } = Direction.None;
 
-        public double Speed { get; set; } = 100;    // Pixels per second
+        public double Speed { get; set; }           // % of Screen per second
         
         // Constructor
-        public Player(BoxView visual, double initialX, double initialY, double size)
+        public Player(double initialX, double initialY, double size, BoxView visual, double speed)
             : base(initialX, initialY, size)
         {
             Visual = visual;
+            Speed = speed;
             UpdateUI(); // Set initial position
         }
 
@@ -30,10 +31,9 @@ namespace RaindropFall
         {
             if (!IsActive) return false;
 
-            // Calculate distance to move this frame
-            double distance = Speed * deltaTime;
-            double effectiveWidth = SceneProperties.GameWidth - Size;
-            double changeX = distance / effectiveWidth;
+            // Calculate the distance to move this frame
+            // Formula: ProportionalChange = ProportionalSpeed * deltaTime
+            double changeX = (Speed / 100) * deltaTime;
 
             if (CurrentDirection == Direction.Left) { changeX *= -1; }      // Move Left
             else if (CurrentDirection == Direction.Right) { }               // Move Right

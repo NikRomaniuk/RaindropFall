@@ -29,10 +29,10 @@ namespace RaindropFall
             // --- Initialize Objects ---
 
             // Player
-            _playerCharacter = new Player(playerVisual, 0.5, 0.85, 30);
+            _playerCharacter = new Player(0.5, 0.85, 30, playerVisual, 70);
 
             // Test Group
-            _testGroup = new FlowGroup(200);
+            _testGroup = new FlowGroup(80);
             // Build the Group
             // With "V" formation forexample
             _testGroup.AddObstacle(0.0, 0.0, Colors.Red, 25);
