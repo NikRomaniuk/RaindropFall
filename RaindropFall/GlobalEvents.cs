@@ -1,4 +1,4 @@
-﻿using System.Timers;
+﻿using System.Diagnostics;
 
 namespace RaindropFall
 {
@@ -7,17 +7,26 @@ namespace RaindropFall
     /// </summary>
     public static class GlobalEvents
     {
-        // Define the fixed frame rate: 60 FPS
+        // Define the fixed frame rate
         private const int TargetFPS = 60;
         // Calculate the interval in milliseconds
         private const double IntervalMs = 1000.0 / TargetFPS;
 
+        // How much time passed since last frame (deltaTime)
+        // Fixed value
+        private const double FixedDeltaTime = 1.0 / TargetFPS;
+
         // '!' is a null-forgiving operator
-        private static System.Timers.Timer globalTimer = null!;
+        // private static System.Timers.Timer globalTimer = null!;
+        private static IDispatcherTimer globalTimer;
 
         // Global Events that some interactive game objects will subscribe to
         // '?' declares it as a nullable event
         public static event Action<double>? Update;
+
+        // Testing
+        static int frames = 0;
+        static double timeAccumulator = 0;
 
         /// <summary>
         /// Initializes and starts the game timer (Once per app load)
@@ -26,16 +35,17 @@ namespace RaindropFall
         {
             if (globalTimer == null)
             {
-                globalTimer = new System.Timers.Timer(IntervalMs);
-                globalTimer.Elapsed += OnTick;
-                globalTimer.AutoReset = true;
+                globalTimer = Dispatcher.GetForCurrentThread().CreateTimer();
+                globalTimer.Interval = TimeSpan.FromMilliseconds(IntervalMs);
+                globalTimer.Tick += OnTick;
+                globalTimer.IsRepeating = true;
             }
 
             // Start the timer only if it's not already running
-            if (!globalTimer.Enabled)
+            if (!globalTimer.IsRunning)
             {
                 globalTimer.Start();
-                System.Diagnostics.Debug.WriteLine("Global Timer Started");
+                Debug.WriteLine("Global Timer Started");
             }
         }
 
@@ -45,27 +55,29 @@ namespace RaindropFall
         public static void Stop()
         {
             globalTimer?.Stop();
-            System.Diagnostics.Debug.WriteLine("Global Timer Stopped");
+            Debug.WriteLine("Global Timer Stopped");
         }
 
         /// <summary>
         /// Currently invokes the global "Update" event
         /// </summary>
-        private static void OnTick(object sender, ElapsedEventArgs e)
+        private static void OnTick(object sender, EventArgs e)
         {
-            // IMPORTANT:
-            // The Dispatcher ensures that the frame update logic
-            // which modifies the position of your BoxView elements
-            // executes legally on the thread that controls the screen
+            // --- Main Body ---
+            double deltaTime = FixedDeltaTime;
 
-            Microsoft.Maui.Controls.Application.Current.Dispatcher.Dispatch(() =>
+            // Invoke the global Update event
+            Update?.Invoke(deltaTime);
+
+            // --- FPS Counter ---
+            frames++;
+            timeAccumulator += deltaTime;
+            if (timeAccumulator >= 1.0)
             {
-                // Calculate DeltaTime
-                double deltaTime = IntervalMs / 1000.0;
-
-                // Invoke the global Update event
-                Update?.Invoke(deltaTime);
-            });
+                Debug.WriteLine($"FPS: {frames}");
+                frames = 0;
+                timeAccumulator = 0;
+            }
         }
     }
 }

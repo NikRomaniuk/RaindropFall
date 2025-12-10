@@ -3,11 +3,37 @@
              xmlns:x = "http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class = "RaindropFall.MainPage"
              Title = "Raindrop Fall">
+    <Grid BackgroundColor = "Black">
+        <AbsoluteLayout x:Name = "Scene">
 
-    <AbsoluteLayout x:Name = "Scene" 
-                    VerticalOptions = "Fill" 
-                    HorizontalOptions = "Fill">
+        <!-- Touch Input Areas -->
         
+        <!-- Left Half -->
+        <BoxView x:Name="LeftInputArea"
+                 Color = "Green" 
+                 AbsoluteLayout.LayoutFlags = "All"
+                 AbsoluteLayout.LayoutBounds = "0, 0, 0.5, 1">
+            <BoxView.GestureRecognizers>
+                <!-- Pointer events for continuous movement: triggers when pressed and released -->
+                <PointerGestureRecognizer PointerPressed = "OnLeftAreaPressed" />
+                <PointerGestureRecognizer PointerReleased = "OnInputAreaReleased" />
+                <PointerGestureRecognizer PointerExited = "OnInputAreaReleased" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- Right Half -->
+        <BoxView x:Name="RightInputArea"
+                 Color = "Yellow" 
+                 AbsoluteLayout.LayoutFlags = "All"
+                 AbsoluteLayout.LayoutBounds = "1, 0, 0.5, 1">
+            <BoxView.GestureRecognizers>
+                <!-- Pointer events for continuous movement: triggers when pressed and released -->
+                <PointerGestureRecognizer PointerPressed = "OnRightAreaPressed" />
+                <PointerGestureRecognizer PointerReleased = "OnInputAreaReleased" />
+                <PointerGestureRecognizer PointerExited = "OnInputAreaReleased" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
         <!-- Main Character -->
         <BoxView x:Name = "DropCharacter"
                  Color = "Cyan"
@@ -16,15 +42,7 @@
                  CornerRadius = "5"
                  AbsoluteLayout.LayoutFlags = "PositionProportional"
                  AbsoluteLayout.LayoutBounds = "0.5, 0.5, 30, 30" />
-
-        <!-- Test Motion -->
-        <BoxView x:Name = "TestMove"
-                 Color = "Red"
-                 WidthRequest = "20"
-                 HeightRequest = "20"
-                 CornerRadius = "5"
-                 AbsoluteLayout.LayoutFlags = "None"
-                 AbsoluteLayout.LayoutBounds = "0.8, 0.1, 25, 25" />
-    </AbsoluteLayout>
+        </AbsoluteLayout>
+    </Grid>
 
 </ContentPage>
