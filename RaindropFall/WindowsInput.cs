@@ -9,6 +9,9 @@ namespace RaindropFall
 {
     public class WindowsInput
     {
+        private Microsoft.UI.Xaml.Window? _winWindow;
+        private Microsoft.UI.Xaml.UIElement? _root;
+
         private readonly MainPage _page;
         private readonly GameManager _gameManager;
         private readonly AbsoluteLayout _scene;
@@ -36,22 +39,37 @@ namespace RaindropFall
 
         public void Attach()
         {
-            // Get the native WinUI view for this page
-            if (_page.Handler?.PlatformView is UIElement nativeView)
+            if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView
+                is Microsoft.UI.Xaml.Window winWindow
+                && winWindow.Content is Microsoft.UI.Xaml.UIElement root)
             {
-                _nativeView = nativeView;
+                _winWindow = winWindow;
+                _root = root;
 
-                // Keyboard
-                nativeView.IsTabStop = true;
-                nativeView.KeyDown += OnKeyDown;
-                nativeView.KeyUp += OnKeyUp;
+                // Keyboard events
+                root.KeyDown += OnKeyDown;
+                root.KeyUp += OnKeyUp;
 
-                // Pointer: any click in the window re-focuses this view
-                nativeView.PointerPressed += OnPointerPressed;
+                // Make it focusable
+                root.IsTabStop = true;
 
-                nativeView.Focus(FocusState.Programmatic);
+                // Pointer events: catch them even if children handle them
+                root.AddHandler(Microsoft.UI.Xaml.UIElement.PointerPressedEvent,
+                    new Microsoft.UI.Xaml.Input.PointerEventHandler(OnAnyPointer),
+                    true);
 
-                System.Diagnostics.Debug.WriteLine("WindowsInputAdapter attached.");
+                root.AddHandler(Microsoft.UI.Xaml.UIElement.PointerReleasedEvent,
+                    new Microsoft.UI.Xaml.Input.PointerEventHandler(OnAnyPointer),
+                    true);
+
+                root.AddHandler(Microsoft.UI.Xaml.UIElement.PointerCanceledEvent,
+                    new Microsoft.UI.Xaml.Input.PointerEventHandler(OnAnyPointer),
+                    true);
+
+                // Initial focus
+                ForceFocus();
+
+                System.Diagnostics.Debug.WriteLine("WindowsInput attached to Window.Content root");
             }
 
             // Disable touch zones on Windows completely
@@ -60,14 +78,24 @@ namespace RaindropFall
 
         public void Detach()
         {
-            if (_nativeView is UIElement nativeView)
+            if (_root is not null)
             {
-                nativeView.KeyDown -= OnKeyDown;
-                nativeView.KeyUp -= OnKeyUp;
-                nativeView.PointerPressed -= OnPointerPressed;
-            }
+                _root.KeyDown -= OnKeyDown;
+                _root.KeyUp -= OnKeyUp;
 
-            System.Diagnostics.Debug.WriteLine("WindowsInputAdapter detached.");
+                _root.RemoveHandler(Microsoft.UI.Xaml.UIElement.PointerPressedEvent,
+                    new Microsoft.UI.Xaml.Input.PointerEventHandler(OnAnyPointer));
+
+                _root.RemoveHandler(Microsoft.UI.Xaml.UIElement.PointerReleasedEvent,
+                    new Microsoft.UI.Xaml.Input.PointerEventHandler(OnAnyPointer));
+
+                _root.RemoveHandler(Microsoft.UI.Xaml.UIElement.PointerCanceledEvent,
+                    new Microsoft.UI.Xaml.Input.PointerEventHandler(OnAnyPointer));
+            }
+            _root = null;
+            _winWindow = null;
+
+            System.Diagnostics.Debug.WriteLine("WindowsInput dettached from Window.Content root");
         }
 
         private void DisableTouchZones()
@@ -129,6 +157,8 @@ namespace RaindropFall
                 _gameManager.StopPlayerMovement();
         }
 
+        // --- Helper methods ---
+
         // Pointer to keep keyboard focus on page
 
         private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -138,6 +168,22 @@ namespace RaindropFall
                 nativeView.Focus(FocusState.Programmatic);
                 System.Diagnostics.Debug.WriteLine("Focus restored on pointer press.");
             }
+        }
+
+        private void OnAnyPointer(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            // Refocus AFTER the click finishes (works around focus changing on release)
+            _root?.DispatcherQueue.TryEnqueue(() => ForceFocus());
+        }
+
+        private void ForceFocus()
+        {
+            if (_root is null) return;
+
+            _root.IsTabStop = true;
+            _root.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
+
+            System.Diagnostics.Debug.WriteLine($"ForceFocus() -> focused={_root.FocusState}");
         }
     }
 }

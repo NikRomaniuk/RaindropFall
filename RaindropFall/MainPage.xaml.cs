@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Maui.Core;
+using Microsoft.Maui.ApplicationModel;
 
 namespace RaindropFall
 {
@@ -88,7 +89,8 @@ namespace RaindropFall
         {
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                const double iconSize = 24;
+                // Get original icon size
+                var iconSize = HpIconContainer.HeightRequest;
 
                 hpPercent = Math.Clamp(hpPercent, 0.0, 1.0);
 
