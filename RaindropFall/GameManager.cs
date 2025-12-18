@@ -11,7 +11,7 @@ namespace RaindropFall
         private readonly AbsoluteLayout _scene;
 
         // Game Objects
-        private readonly Player _playerCharacter;
+        public readonly Player _playerCharacter;
         private FlowGroup _testGroup;
 
         // Other
@@ -93,7 +93,8 @@ namespace RaindropFall
             _playerCharacter.Update(deltaTime);
         }
 
-        // --- Input Handling ---
+        // --- Player ---
+
         public void SetPlayerDirection(Direction direction)
         {
             _playerCharacter.SetDirection(direction);

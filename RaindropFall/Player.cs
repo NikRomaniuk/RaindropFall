@@ -6,12 +6,14 @@ using static Microsoft.Maui.ApplicationModel.Permissions;
 namespace RaindropFall
 {
     // Set up enum variable in RaindropFall so every class can access it
-    public enum Direction { None, Left, Right }     // Movement State
+    public enum MoveState { Idle, Moving }      // Movement State
+    public enum Direction { None, Left, Right}  // Movement Direction
 
     public class Player : GameObject
     {
         // Player Properties 
-        public Direction CurrentDirection { get; set; } = Direction.None;
+        public MoveState MovementState { get; set; } = MoveState.Idle;
+        public Direction CurrentDirection { get; private set; } = Direction.None;
 
         public double Speed { get; set; }           // % of Screen per second
         
@@ -22,7 +24,7 @@ namespace RaindropFall
             Visual = visual;
             Speed = speed;
             UpdateUI(); // Set initial position
-        }
+        } 
 
         /// <summary>
         /// Called every frame to move the object. Returns False if object has despawned
@@ -31,13 +33,20 @@ namespace RaindropFall
         {
             if (!IsActive) return false;
 
+            if (CurrentDirection == Direction.None)
+            {
+                MovementState = MoveState.Idle;
+                return true;
+            }
+
+            MovementState = MoveState.Moving;
+
             // Calculate the distance to move this frame
             // Formula: ProportionalChange = ProportionalSpeed * deltaTime
             double changeX = (Speed / 100) * deltaTime;
 
             if (CurrentDirection == Direction.Left) { changeX *= -1; }      // Move Left
             else if (CurrentDirection == Direction.Right) { }               // Move Right
-            else { return true; }                                           // Skip Moving
 
             // Apply movement
             X += changeX;
@@ -52,19 +61,17 @@ namespace RaindropFall
         // --- Input Handling ---
 
         /// <summary>
-        /// Sets the direction for continuous movement.
+        /// Sets the movement direction
         /// </summary>
         public void SetDirection(Direction direction)
         {
             CurrentDirection = direction;
         }
 
-        /// <summary>
-        /// Stops horizontal movement.
-        /// </summary>
         public void Stop()
         {
             CurrentDirection = Direction.None;
+            MovementState = MoveState.Idle;
         }
     }
 }

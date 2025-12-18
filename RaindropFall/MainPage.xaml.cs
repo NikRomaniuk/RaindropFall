@@ -1,7 +1,4 @@
-﻿// File: MainPage.xaml.cs
-
-using Microsoft.Maui.Layouts;
-using System;
+﻿using CommunityToolkit.Maui.Core;
 
 namespace RaindropFall
 {
@@ -10,66 +7,148 @@ namespace RaindropFall
         // Manager holds all game logic and objects
         private GameManager _gameManager;
 
+        private bool _sceneInitialized = false;
+
+        // Input Handling
+        private bool _leftHeld;
+        private bool _rightHeld;
+
+        private enum LastPressedSide { None, Left, Right }
+        private LastPressedSide _lastPressed = LastPressedSide.None;
+
+        #if WINDOWS
+        private WindowsInput? _windowsInput;
+        #endif
+
         public MainPage()
         {
             InitializeComponent();
+
+            // Subscribe to the Loaded event
             this.Loaded += OnPageLoaded;
+            Scene.SizeChanged += OnSceneSizeChanged;
 
             // Initialize the GameManager
-            // Passing the UI elements it needs
             _gameManager = new GameManager(Scene, DropCharacter);
         }
-
-        // --- Event Subscription Management ---
 
         protected override void OnDisappearing()
         {
             _gameManager.StopGameLoop();
+
+            // Unsubscribe from Windows events
+            #if WINDOWS
+            _windowsInput?.Detach();
+            #endif
+
             base.OnDisappearing();
             System.Diagnostics.Debug.WriteLine("Page disappearing");
         }
 
-        private void OnPageLoaded(object sender, EventArgs e)
+        private void OnSceneSizeChanged(object? sender, EventArgs e)
         {
-            // --- Setup Scene Properties  ---
+            if (_sceneInitialized) return;
+            if (Scene.Width <= 0 || Scene.Height <= 0) return;
+
+            // --- Setup Scene Properties ---
+
             SceneProperties.Height = Scene.Height;
             SceneProperties.Width = Scene.Width;
             SceneProperties.SetGameAreaDimensions();
-            System.Diagnostics.Debug.WriteLine("Scene Properties set");
 
             Scene.WidthRequest = SceneProperties.GameWidth;
             Scene.HeightRequest = SceneProperties.GameHeight;
-            System.Diagnostics.Debug.WriteLine("Scene Properties applied to the Scene");
 
+            _sceneInitialized = true;
+            System.Diagnostics.Debug.WriteLine($"Scene initialized: {Scene.Width} x {Scene.Height}");
+        }
+
+        private void OnPageLoaded(object sender, EventArgs e)
+        {
+            // --- Controls setup ---
+            // Set up controls for Desktop
+            #if WINDOWS
+            // Windows-only: keyboard input + disable touch zones
+            _windowsInput = new WindowsInput(this, _gameManager, Scene, LeftInputArea, RightInputArea);
+            _windowsInput.Attach();
+            #endif
+
+            // --- Game ---
             // Start the Game Loop
             _gameManager.StartGameLoop();
-
-            System.Diagnostics.Debug.WriteLine("Page loaded");
         }
 
         // --- Input Handling ---
 
-        /// <summary>
-        /// Sets the Player's direction state to Left when pressed
-        /// </summary>
-        private void OnLeftAreaPressed(object sender, PointerEventArgs e)
+        // ===================================
+        // TOUCH/POINTER INPUT (iOS & Android)
+        // ===================================
+
+        private void OnLeftTouchStatusChanged(object sender, TouchStatusChangedEventArgs e)
         {
-            _gameManager.SetPlayerDirection(Direction.Left);
+            #if WINDOWS
+            return; // Windows uses keyboard (WindowsInput)
+            #endif
+
+            if (e.Status == TouchStatus.Started)
+            {
+                _leftHeld = true;
+                _lastPressed = LastPressedSide.Left;
+            }
+            else if (e.Status == TouchStatus.Completed || e.Status == TouchStatus.Canceled)
+            {
+                _leftHeld = false;
+            }
+
+            ApplyCombinedTouchInput();
         }
 
-        /// <summary>
-        /// Sets the Player's direction state to Right when pressed
-        /// </summary>
-        private void OnRightAreaPressed(object sender, PointerEventArgs e)
+        private void OnRightTouchStatusChanged(object sender, TouchStatusChangedEventArgs e)
         {
-            _gameManager.SetPlayerDirection(Direction.Right);
+            #if WINDOWS
+            return;
+            #endif
+
+            if (e.Status == TouchStatus.Started)
+            {
+                _rightHeld = true;
+                _lastPressed = LastPressedSide.Right;
+            }
+            else if (e.Status == TouchStatus.Completed || e.Status == TouchStatus.Canceled)
+            {
+                _rightHeld = false;
+            }
+
+            ApplyCombinedTouchInput();
         }
 
-        /// <summary>
-        /// Stops the Player's movement when released or the pointer exits
-        /// </summary>
-        private void OnInputAreaReleased(object sender, PointerEventArgs e)
+        private void ApplyCombinedTouchInput()
         {
+            // Resolve direction after any touch zone release
+            if (_leftHeld && _rightHeld)
+            {
+                if (_lastPressed == LastPressedSide.Left)
+                    _gameManager.SetPlayerDirection(Direction.Left);
+                else if (_lastPressed == LastPressedSide.Right)
+                    _gameManager.SetPlayerDirection(Direction.Right);
+                else
+                    _gameManager.StopPlayerMovement();
+
+                return;
+            }
+
+            if (_leftHeld)
+            {
+                _gameManager.SetPlayerDirection(Direction.Left);
+                return;
+            }
+
+            if (_rightHeld)
+            {
+                _gameManager.SetPlayerDirection(Direction.Right);
+                return;
+            }
+
             _gameManager.StopPlayerMovement();
         }
     }

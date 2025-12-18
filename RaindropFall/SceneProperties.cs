@@ -10,9 +10,9 @@
         public static double GameHeight;
         public static double GameWidth;
 
-        // Target Aspect Ratio (16/9 for Portriat)
-        // Landscape is a bit cursed, but it's not targeted orientation anyway
-        public const double TARGET_W_UNITS = 9.0;
+        // Target Aspect Ratio (9/16 for Portriat)
+        // Changed to 10/16 because 9/16 looks terrible on PC
+        public const double TARGET_W_UNITS = 10.0;
         public const double TARGET_H_UNITS = 16.0;
 
         public static void SetGameAreaDimensions()
