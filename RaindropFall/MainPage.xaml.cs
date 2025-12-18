@@ -30,6 +30,10 @@ namespace RaindropFall
 
             // Initialize the GameManager
             _gameManager = new GameManager(Scene, DropCharacter);
+            // HP
+            _gameManager.PlayerHealthPercentChanged += OnPlayerHealthChanged;
+            // Game Over
+            _gameManager.GameOver += OnGameOver;
         }
 
         protected override void OnDisappearing()
@@ -76,6 +80,43 @@ namespace RaindropFall
             // --- Game ---
             // Start the Game Loop
             _gameManager.StartGameLoop();
+        }
+
+        // --- Updaters ---
+
+        private void OnPlayerHealthChanged(double hpPercent)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                const double iconSize = 24;
+
+                hpPercent = Math.Clamp(hpPercent, 0.0, 1.0);
+
+                // Hide at 0%
+                HpIconContainer.IsVisible = hpPercent > 0;
+
+                // Fill height scales with HP
+                HpIconFill.HeightRequest = iconSize * hpPercent;
+            });
+        }
+
+        // --- Game Stages ---
+
+        private void OnGameOver()
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                // Stop movement
+                _gameManager.StopPlayerMovement();
+
+                // Hide icon
+                HpIconContainer.IsVisible = false;
+
+                // Stop update loop
+                _gameManager.StopGameLoop();
+
+                await DisplayAlert("Game Over", "HP reached 0.", "OK");
+            });
         }
 
         // --- Input Handling ---

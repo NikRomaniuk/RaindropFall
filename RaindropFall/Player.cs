@@ -11,12 +11,23 @@ namespace RaindropFall
 
     public class Player : GameObject
     {
-        // Player Properties 
+        // --- Constants ---
+        public const int OBJECT_ZINDEX = 50;   // Player Layer
+
+        // --- Player Properties ---
         public MoveState MovementState { get; set; } = MoveState.Idle;
         public Direction CurrentDirection { get; private set; } = Direction.None;
 
-        public double Speed { get; set; }           // % of Screen per second
-        
+        public double Speed { get; set; }               // % of Screen per second
+        public int Health { get; private set; } = 100;  // HP
+
+        // Misc
+        public double HealthPercent => Math.Clamp(Health / 100.0, 0.0, 1.0); // % of HP
+
+        // Events
+
+        public event Action<double>? HealthPercentChanged;
+
         // Constructor
         public Player(double initialX, double initialY, double size, BoxView visual, double speed)
             : base(initialX, initialY, size)
@@ -24,6 +35,9 @@ namespace RaindropFall
             Visual = visual;
             Speed = speed;
             UpdateUI(); // Set initial position
+
+            // Set ZIndex
+            Visual.ZIndex = OBJECT_ZINDEX;
         } 
 
         /// <summary>
@@ -72,6 +86,17 @@ namespace RaindropFall
         {
             CurrentDirection = Direction.None;
             MovementState = MoveState.Idle;
+        }
+
+        /// <summary>
+        /// Substracts from HP
+        /// </summary>
+        public void TakeDamage(int amount)
+        {
+            if (amount <= 0) return;
+
+            Health = Math.Clamp(Health - amount, 0, 100);
+            HealthPercentChanged?.Invoke(HealthPercent);
         }
     }
 }

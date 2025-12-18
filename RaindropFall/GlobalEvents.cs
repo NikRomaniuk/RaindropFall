@@ -8,7 +8,7 @@ namespace RaindropFall
     public static class GlobalEvents
     {
         // Define the fixed frame rate
-        private const int TargetFPS = 30;
+        private const int TargetFPS = 60;
         // Calculate the interval in milliseconds
         private const double IntervalMs = 1000.0 / TargetFPS;
 

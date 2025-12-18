@@ -7,10 +7,35 @@
     <Grid BackgroundColor = "Black">
         <AbsoluteLayout x:Name = "Scene">
 
+            <!-- HP Icon -->
+            <Grid x:Name = "HpIconContainer"
+                  ZIndex="100"
+                  WidthRequest = "40"
+                  HeightRequest = "40"
+                  InputTransparent = "True"
+                  AbsoluteLayout.LayoutFlags = "PositionProportional"
+                  AbsoluteLayout.LayoutBounds = "0.05, 0.05, 40, 40">
+
+                <!-- Frame -->
+                <BoxView Color = "#20303030"
+                         CornerRadius = "4"
+                         HorizontalOptions = "Fill"
+                         VerticalOptions = "Fill"/>
+
+                <!-- Fill that shrinks with HP -->
+                <BoxView x:Name = "HpIconFill"
+                         Color = "Cyan"
+                         CornerRadius = "4"
+                         HeightRequest = "40"
+                         HorizontalOptions = "Fill"
+                         VerticalOptions = "End"/>
+            </Grid>
+
             <!-- Touch Input Areas -->
         
             <!-- Left Half -->
             <BoxView    x:Name = "LeftInputArea"
+                        ZIndex="5"
                         Color = "Green" 
                         AbsoluteLayout.LayoutFlags = "All"
                         AbsoluteLayout.LayoutBounds = "0, 0, 0.5, 1">
@@ -21,6 +46,7 @@
 
             <!-- Right Half -->
             <BoxView    x:Name = "RightInputArea"
+                        ZIndex="5"
                         Color = "Yellow" 
                         AbsoluteLayout.LayoutFlags = "All"
                         AbsoluteLayout.LayoutBounds = "1, 0, 0.5, 1">
@@ -31,6 +57,7 @@
 
             <!-- Main Character -->
             <BoxView    x:Name = "DropCharacter"
+                        ZIndex="50"
                         Color = "Cyan"
                         WidthRequest = "30"
                         HeightRequest = "30"

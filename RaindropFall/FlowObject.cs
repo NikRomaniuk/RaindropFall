@@ -5,6 +5,8 @@ namespace RaindropFall
 {
     public class FlowObject : GameObject
     {
+        public const int OBJECT_ZINDEX = 20;   // Generic Object Layer
+
         public double Speed { get; set; } // Proportional units per second (100 - 100% Screen)
 
         public FlowObject(Color color, double size, double speed) : base(0, 1.2, size)
@@ -25,6 +27,8 @@ namespace RaindropFall
             // Initial Spawn Position
             // 1.2 is slightly below bottom boudary of the screen
             Y = 1.2;
+            // Set ZIndex
+            Visual.ZIndex = OBJECT_ZINDEX;
         }
 
         /// <summary>

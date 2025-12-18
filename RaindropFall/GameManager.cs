@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Maui.Controls;
+using Microsoft.Maui.Layouts;
+using System;
 using System.Diagnostics;
 
 namespace RaindropFall
@@ -14,7 +16,12 @@ namespace RaindropFall
         public readonly Player _playerCharacter;
         private FlowGroup _testGroup;
 
-        // Other
+        // Events
+        public event Action<double>? PlayerHealthPercentChanged;
+        public event Action? GameOver;
+
+        // Misc
+        private bool _isGameOver;
         private readonly Random _random = new Random();
 
         // --- Constructor ---
@@ -29,15 +36,18 @@ namespace RaindropFall
             // --- Initialize Objects ---
 
             // Player
-            _playerCharacter = new Player(0.5, 0.85, 30, playerVisual, 70);
+            _playerCharacter = new Player(0.5, 0.5, 40, playerVisual, 70);
+            // Forward player hp updates to UI
+            _playerCharacter.HealthPercentChanged += hp => PlayerHealthPercentChanged?.Invoke(hp);
+            PlayerHealthPercentChanged?.Invoke(_playerCharacter.HealthPercent);
 
             // Test Group
             _testGroup = new FlowGroup(80);
             // Build the Group
             // With "V" formation forexample
-            _testGroup.AddObstacle(0.0, 0.0, Colors.Red, 25);
-            _testGroup.AddObstacle(-0.15, 0.1, Colors.DarkRed, 25);
-            _testGroup.AddObstacle(0.15, 0.1, Colors.PaleVioletRed, 25);
+            _testGroup.AddObstacle(0.0, 0.0, Colors.Red, 30);
+            _testGroup.AddObstacle(-0.25, 0.1, Colors.DarkRed, 30);
+            _testGroup.AddObstacle(0.25, 0.1, Colors.PaleVioletRed, 30);
 
             // --- Add Visuals ---
 
@@ -80,6 +90,8 @@ namespace RaindropFall
         /// </summary>
         private void OnUpdate(double deltaTime)
         {
+            if (_isGameOver) return;
+
             // Update the Group
             bool isStillActive = _testGroup.Update(deltaTime);
 
@@ -91,6 +103,8 @@ namespace RaindropFall
 
             // Update the Player
             _playerCharacter.Update(deltaTime);
+
+            CheckCollisionsAndApplyDamage();
         }
 
         // --- Player ---
@@ -103,6 +117,62 @@ namespace RaindropFall
         public void StopPlayerMovement()
         {
             _playerCharacter.Stop();
+        }
+
+        // Collision
+
+        /// <summary>
+        /// Checks all possible Collisions and applies damage if needeed
+        /// Currently only checks for TestGroup collisions
+        /// </summary>
+        private void CheckCollisionsAndApplyDamage()
+        {
+            if (SceneProperties.GameWidth <= 0 || SceneProperties.GameHeight <= 0) return;
+
+            var playerBounds = GetBoundsProportional(_playerCharacter.X, _playerCharacter.Y, _playerCharacter.Size);
+
+            foreach (var member in _testGroup.Members)
+            {
+                var obj = member.ChildObject;
+                if (!obj.IsActive) continue;
+
+                var objBounds = GetBoundsProportional(obj.X, obj.Y, obj.Size);
+
+                if (Intersects(playerBounds, objBounds))
+                {
+                    // Disable collided object
+                    obj.IsActive = false;
+                    obj.Visual.IsVisible = false;
+
+                    // Update Player stats
+                    _playerCharacter.TakeDamage(40);
+
+                    // Invoke GameOver
+                    if (_playerCharacter.Health <= 0)
+                    {
+                        _isGameOver = true;
+                        GameOver?.Invoke();
+                    }
+                    return;
+                }
+            }
+        }
+
+        private (double Left, double Top, double Right, double Bottom) GetBoundsProportional(double x, double y, double sizePx)
+        {
+            double w = sizePx / SceneProperties.GameWidth;
+            double h = sizePx / SceneProperties.GameHeight;
+            return (x, y, x + w, y + h);
+        }
+
+        private bool Intersects(
+            (double Left, double Top, double Right, double Bottom) a,
+            (double Left, double Top, double Right, double Bottom) b)
+        {
+            return a.Left < b.Right &&
+                   a.Right > b.Left &&
+                   a.Top < b.Bottom &&
+                   a.Bottom > b.Top;
         }
 
         // --- Other ---
