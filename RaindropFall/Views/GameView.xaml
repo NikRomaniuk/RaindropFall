@@ -63,28 +63,26 @@
                     <!-- Touch Input Areas -->
 
                     <!-- Left Half -->
-                    <BoxView    x:Name = "LeftInputArea"
-                                ZIndex="5"
-                                Color = "White" 
-                                Opacity="0"
-                                AbsoluteLayout.LayoutFlags = "All"
-                                AbsoluteLayout.LayoutBounds = "0, 0, 0.5, 1">
-                        <BoxView.Behaviors>
+                    <ContentView    x:Name = "LeftInputArea"
+                                    ZIndex="5"
+                                    BackgroundColor = "Transparent"
+                                    AbsoluteLayout.LayoutFlags = "All"
+                                    AbsoluteLayout.LayoutBounds = "0, 0, 0.5, 1">
+                        <ContentView.Behaviors>
                             <toolkit:TouchBehavior CurrentTouchStatusChanged = "OnLeftTouchStatusChanged"/>
-                        </BoxView.Behaviors>
-                    </BoxView>
+                        </ContentView.Behaviors>
+                    </ContentView>
 
                     <!-- Right Half -->
-                    <BoxView    x:Name = "RightInputArea"
-                                ZIndex="5"
-                                Color = "White" 
-                                Opacity="0"
-                                AbsoluteLayout.LayoutFlags = "All"
-                                AbsoluteLayout.LayoutBounds = "1, 0, 0.5, 1">
-                        <BoxView.Behaviors>
+                    <ContentView    x:Name = "RightInputArea"
+                                    ZIndex="5"
+                                    BackgroundColor = "Transparent"
+                                    AbsoluteLayout.LayoutFlags = "All"
+                                    AbsoluteLayout.LayoutBounds = "1, 0, 0.5, 1">
+                        <ContentView.Behaviors>
                             <toolkit:TouchBehavior CurrentTouchStatusChanged = "OnRightTouchStatusChanged"/>
-                        </BoxView.Behaviors>
-                    </BoxView>
+                        </ContentView.Behaviors>
+                    </ContentView>
 
                     <!-- Main Character -->
                     <!-- No more... -->

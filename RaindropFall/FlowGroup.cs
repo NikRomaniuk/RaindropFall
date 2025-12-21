@@ -20,7 +20,8 @@ namespace RaindropFall
         // The Grouop itself is invisible to act as Anchor
         public FlowGroup(double speed) : base(Colors.Transparent, 100, speed)
         {
-            // Nothing in there yet
+            // Make the anchor completely invisible
+            Visual.IsVisible = false;
         }
 
         /// <summary>
