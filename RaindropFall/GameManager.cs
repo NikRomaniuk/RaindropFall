@@ -17,6 +17,9 @@ namespace RaindropFall
         public readonly Player _playerCharacter;
         private FlowGroup _testGroup;
 
+        // Level
+        private readonly LevelProperties _level;
+
         // Events
         public event Action<double>? PlayerHealthPercentChanged;
         public event Action? GameOver;
@@ -34,6 +37,7 @@ namespace RaindropFall
         {
             _scene = scene;
             _root = root;
+            _level = level;
 
             // --- Initialize Objects ---
 
@@ -160,7 +164,7 @@ namespace RaindropFall
                     obj.Visual.IsVisible = false;
 
                     // Update Player stats
-                    _playerCharacter.TakeDamage(40);
+                    _playerCharacter.TakeDamage(_level.DamagePerHit);
 
                     // Invoke GameOver
                     if (_playerCharacter.Health <= 0)
