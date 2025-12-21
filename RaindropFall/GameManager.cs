@@ -50,7 +50,7 @@ namespace RaindropFall
             };
             _scene.Children.Add(playerVisual);
 
-            _playerCharacter = new Player(0.5, 0.5, 10, playerVisual, level.PlayerSpeed);
+            _playerCharacter = new Player(0.5, 0.5, 10, playerVisual, level.PlayerSpeed, level.PlayerAcceleration);
             // Forward player hp updates to UI
             _playerCharacter.HealthPercentChanged += hp => PlayerHealthPercentChanged?.Invoke(hp);
             PlayerHealthPercentChanged?.Invoke(_playerCharacter.HealthPercent);

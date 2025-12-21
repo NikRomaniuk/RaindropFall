@@ -6,6 +6,7 @@ public sealed class LevelProperties
     public Color BackgroundColor { get; }
 
     public double PlayerSpeed { get; }
+    public double PlayerAcceleration { get; }
     public double FallingSpeed { get; }
     public int DamagePerHit { get; }
 
@@ -15,6 +16,7 @@ public sealed class LevelProperties
         string title,
         Color backgroundColor,
         double playerSpeed,
+        double playerAcceleration,
         double fallingSpeed,
         int damagePerHit,
         Action<FlowGroup> buildFormation)
@@ -22,6 +24,7 @@ public sealed class LevelProperties
         Title = title;
         BackgroundColor = backgroundColor;
         PlayerSpeed = playerSpeed;
+        PlayerAcceleration = playerAcceleration;
         FallingSpeed = fallingSpeed;
         DamagePerHit = damagePerHit;
         BuildFormation = buildFormation;

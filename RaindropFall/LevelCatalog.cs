@@ -5,7 +5,8 @@ public static class LevelCatalog
     public static readonly LevelProperties Level1 = new(
         title: "Level 1",
         backgroundColor: Color.FromArgb("#BFD7FF"), // Pastel blue
-        playerSpeed: 70,
+        playerSpeed: 80,
+        playerAcceleration: 50,
         fallingSpeed: 60,
         damagePerHit: 40,
         buildFormation: BuildVFormation);
@@ -13,7 +14,8 @@ public static class LevelCatalog
     public static readonly LevelProperties Level2 = new(
         title: "Level 2",
         backgroundColor: Color.FromArgb("#BFF5E1"), // Mint
-        playerSpeed: 70,
+        playerSpeed: 80,
+        playerAcceleration: 50,
         fallingSpeed: 70,
         damagePerHit: 10,
         buildFormation: BuildLineFormation);
