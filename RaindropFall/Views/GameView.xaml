@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView    xmlns = "http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                xmlns:x = "http://schemas.microsoft.com/winfx/2009/xaml"
+                x:Class = "RaindropFall.Views.GameView">
+
+    <Grid x:Name = "Root">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Left gutter -->
+        <BoxView x:Name="LeftGutter"
+                 Grid.Column="0"
+                 Color="#22000000" />
+
+        <!-- Center area (same as Scene color) -->
+        <Grid x:Name="CenterArea"
+              Grid.Column="1"
+              HorizontalOptions="Center"
+              VerticalOptions="Center">
+
+            <!-- This is the fixed-size container for the actual game Scene -->
+            <Grid x:Name="SceneHost"
+                  HorizontalOptions="Center"
+                  VerticalOptions="Center">
+        
+                <AbsoluteLayout x:Name = "Scene">
+
+                    <!-- Scene background -->
+                    <BoxView    x:Name="SceneBackground"
+                                ZIndex="-100"
+                                Color="Transparent"
+                                AbsoluteLayout.LayoutFlags="All"
+                                AbsoluteLayout.LayoutBounds="0,0,1,1" />
+
+                    <!-- HP Icon -->
+                    <Grid x:Name = "HpIconContainer"
+                          ZIndex="100"
+                          WidthRequest = "40"
+                          HeightRequest = "40"
+                          InputTransparent = "True"
+                          AbsoluteLayout.LayoutFlags = "PositionProportional"
+                          AbsoluteLayout.LayoutBounds = "0.05, 0.05, 40, 40">
+
+                        <!-- Frame -->
+                        <BoxView Color = "#20303030"
+                                 CornerRadius = "4"
+                                 HorizontalOptions = "Fill"
+                                 VerticalOptions = "Fill"/>
+
+                        <!-- Fill that shrinks with HP -->
+                        <BoxView x:Name = "HpIconFill"
+                                 Color = "Cyan"
+                                 CornerRadius = "4"
+                                 HeightRequest = "40"
+                                 HorizontalOptions = "Fill"
+                                 VerticalOptions = "End"/>
+                    </Grid>
+
+                    <!-- Touch Input Areas -->
+
+                    <!-- Left Half -->
+                    <BoxView    x:Name = "LeftInputArea"
+                                ZIndex="5"
+                                Color = "White" 
+                                Opacity="0"
+                                AbsoluteLayout.LayoutFlags = "All"
+                                AbsoluteLayout.LayoutBounds = "0, 0, 0.5, 1">
+                        <BoxView.Behaviors>
+                            <toolkit:TouchBehavior CurrentTouchStatusChanged = "OnLeftTouchStatusChanged"/>
+                        </BoxView.Behaviors>
+                    </BoxView>
+
+                    <!-- Right Half -->
+                    <BoxView    x:Name = "RightInputArea"
+                                ZIndex="5"
+                                Color = "White" 
+                                Opacity="0"
+                                AbsoluteLayout.LayoutFlags = "All"
+                                AbsoluteLayout.LayoutBounds = "1, 0, 0.5, 1">
+                        <BoxView.Behaviors>
+                            <toolkit:TouchBehavior CurrentTouchStatusChanged = "OnRightTouchStatusChanged"/>
+                        </BoxView.Behaviors>
+                    </BoxView>
+
+                    <!-- Main Character -->
+                    <!-- No more... -->
+                </AbsoluteLayout>
+            </Grid>
+        </Grid>
+
+        <!-- Right gutter -->
+        <BoxView x:Name="RightGutter"
+                 Grid.Column="2"
+                 Color="#22000000" />
+    </Grid>
+</ContentView>

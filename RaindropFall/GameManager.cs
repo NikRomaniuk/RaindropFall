@@ -11,6 +11,7 @@ namespace RaindropFall
 
         // The UI Element where all Interactive GameObjects will be drawn
         private readonly AbsoluteLayout _scene;
+        private readonly Grid _root;
 
         // Game Objects
         public readonly Player _playerCharacter;
@@ -29,27 +30,35 @@ namespace RaindropFall
         /// <summary>
         /// Initializes the GameManager and all primary game entities
         /// </summary>
-        public GameManager(AbsoluteLayout scene, BoxView playerVisual)
+        public GameManager(Grid root, AbsoluteLayout scene, LevelProperties level)
         {
             _scene = scene;
+            _root = root;
 
             // --- Initialize Objects ---
 
             // Player
-            _playerCharacter = new Player(0.5, 0.5, 40, playerVisual, 70);
+            var playerVisual = new BoxView
+            {
+                Color = Colors.Cyan,
+                CornerRadius = 5,
+                ZIndex = 50
+            };
+            _scene.Children.Add(playerVisual);
+
+            _playerCharacter = new Player(0.5, 0.5, 10, playerVisual, level.PlayerSpeed);
             // Forward player hp updates to UI
             _playerCharacter.HealthPercentChanged += hp => PlayerHealthPercentChanged?.Invoke(hp);
             PlayerHealthPercentChanged?.Invoke(_playerCharacter.HealthPercent);
 
             // Test Group
-            _testGroup = new FlowGroup(80);
+            _testGroup = new FlowGroup(level.FallingSpeed);
             // Build the Group
-            // With "V" formation forexample
-            _testGroup.AddObstacle(0.0, 0.0, Colors.Red, 30);
-            _testGroup.AddObstacle(-0.25, 0.1, Colors.DarkRed, 30);
-            _testGroup.AddObstacle(0.25, 0.1, Colors.PaleVioletRed, 30);
+            // With pre-built formation
+            level.BuildFormation(_testGroup);
 
-            // --- Add Visuals ---
+            // --- Visuals ---
+            _root.BackgroundColor = level.BackgroundColor;
 
             _scene.Children.Add(_testGroup.Visual);     // The invisible anchor (FlowGroup itself)
             foreach (var member in _testGroup.Members)
@@ -129,14 +138,20 @@ namespace RaindropFall
         {
             if (SceneProperties.GameWidth <= 0 || SceneProperties.GameHeight <= 0) return;
 
-            var playerBounds = GetBoundsProportional(_playerCharacter.X, _playerCharacter.Y, _playerCharacter.Size);
+            var playerBounds = GetBoundsProportional(
+                _playerCharacter.X,
+                _playerCharacter.Y,
+                SceneProperties.PxFromWidthPercent(_playerCharacter.Size));
 
             foreach (var member in _testGroup.Members)
             {
                 var obj = member.ChildObject;
                 if (!obj.IsActive) continue;
 
-                var objBounds = GetBoundsProportional(obj.X, obj.Y, obj.Size);
+                var objBounds = GetBoundsProportional(
+                    obj.X, 
+                    obj.Y,
+                    SceneProperties.PxFromWidthPercent(obj.Size));
 
                 if (Intersects(playerBounds, objBounds))
                 {

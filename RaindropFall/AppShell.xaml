@@ -3,12 +3,12 @@
     x:Class="RaindropFall.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:RaindropFall"
+    xmlns:pages="clr-namespace:RaindropFall.Pages"
+    FlyoutBehavior="Disabled"
     Title="RaindropFall">
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Menu"
+        ContentTemplate="{DataTemplate pages:MainMenuPage}"/>
 
 </Shell>

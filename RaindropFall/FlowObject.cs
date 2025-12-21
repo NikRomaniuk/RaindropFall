@@ -11,6 +11,7 @@ namespace RaindropFall
 
         public FlowObject(Color color, double size, double speed) : base(0, 1.2, size)
         {
+            // Size is counted as a % of the Scene (area with interactive objects)
             Size = size;
             Speed = speed;
             IsActive = true;
@@ -68,15 +69,6 @@ namespace RaindropFall
             }
 
             return true;
-        }
-
-        public virtual void UpdateUI()
-        {
-            // Sets the object position
-            // based on its constantly updating proportional coordinates and its fixed size
-            AbsoluteLayout.SetLayoutBounds(Visual, new Rect(X, Y, Size, Size));
-            // Tells the AbsoluteLayout container how to interpret object position
-            AbsoluteLayout.SetLayoutFlags(Visual, AbsoluteLayoutFlags.PositionProportional);
         }
     }
 }

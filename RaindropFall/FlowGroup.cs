@@ -18,7 +18,7 @@ namespace RaindropFall
 
         // Constructor passes default values to base
         // The Grouop itself is invisible to act as Anchor
-        public FlowGroup(double speed) : base(Colors.Transparent, 0, speed)
+        public FlowGroup(double speed) : base(Colors.Transparent, 100, speed)
         {
             // Nothing in there yet
         }

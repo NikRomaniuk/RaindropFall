@@ -21,11 +21,26 @@ namespace RaindropFall
             X = initialX;
             Y = initialY;
             Size = size;
+
+            // Initialize the UI
+            Visual = new BoxView
+            {
+                Color = Colors.White,
+                CornerRadius = 3
+            };
         }
 
-        protected virtual void UpdateUI()
+        public virtual void UpdateUI()
         {
-            AbsoluteLayout.SetLayoutBounds(Visual, new Rect(X, Y, Size, Size));
+            double sizePx = SceneProperties.PxFromWidthPercent(Size);
+
+            Visual.WidthRequest = sizePx;
+            Visual.HeightRequest = sizePx;
+
+            // Sets the object position
+            // based on its constantly updating proportional coordinates and its fixed size
+            AbsoluteLayout.SetLayoutBounds(Visual, new Rect(X, Y, sizePx, sizePx));
+            // Tells the AbsoluteLayout container how to interpret object position
             AbsoluteLayout.SetLayoutFlags(Visual, AbsoluteLayoutFlags.PositionProportional);
         }
 

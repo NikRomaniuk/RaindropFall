@@ -1,10 +1,14 @@
-﻿namespace RaindropFall
+﻿using RaindropFall.Pages;
+
+namespace RaindropFall;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+
+        Routing.RegisterRoute(nameof(Level1Page), typeof(Level1Page));
+        Routing.RegisterRoute(nameof(Level2Page), typeof(Level2Page));
     }
 }
