@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Controls;
 using Microsoft.Maui.Layouts;
+using Microsoft.Maui.Graphics;
 using System;
 using System.Diagnostics;
 
@@ -140,24 +141,12 @@ namespace RaindropFall
         /// </summary>
         private void CheckCollisionsAndApplyDamage()
         {
-            if (SceneProperties.GameWidth <= 0 || SceneProperties.GameHeight <= 0) return;
-
-            var playerBounds = GetBoundsProportional(
-                _playerCharacter.X,
-                _playerCharacter.Y,
-                SceneProperties.PxFromWidthPercent(_playerCharacter.Size));
-
             foreach (var member in _testGroup.Members)
             {
                 var obj = member.ChildObject;
                 if (!obj.IsActive) continue;
 
-                var objBounds = GetBoundsProportional(
-                    obj.X, 
-                    obj.Y,
-                    SceneProperties.PxFromWidthPercent(obj.Size));
-
-                if (Intersects(playerBounds, objBounds))
+                if (CheckForCollision(_playerCharacter.Visual, obj.Visual))
                 {
                     // Disable collided object
                     obj.IsActive = false;
@@ -177,31 +166,17 @@ namespace RaindropFall
             }
         }
 
-        private (double Left, double Top, double Right, double Bottom) GetBoundsProportional(double x, double y, double sizePx)
+        /// <summary>
+        /// Checks if two VisualElements are colliding based on their Bounds
+        /// </summary>
+        private bool CheckForCollision(VisualElement element1, VisualElement element2)
         {
-            // Convert pixel size to proportional coordinates
-            // With PositionProportional flag, X and Y represent the top-left corner (0.0 to 1.0)
-            // sizePx is the object's size in pixels (square object)
-            
-            // Convert pixel dimensions to proportional units
-            // Since Size is defined as % of width, we convert width using GameWidth
-            double w = sizePx / SceneProperties.GameWidth;  // Width in proportional units (0.0 to 1.0)
-            // For height, we need to account for the aspect ratio
-            // A square object in pixels becomes a rectangle in proportional space if GameWidth != GameHeight
-            double h = sizePx / SceneProperties.GameHeight; // Height in proportional units (0.0 to 1.0)
-            
-            // X, Y is top-left corner, so bounds extend from (x, y) to (x + w, y + h)
-            return (x, y, x + w, y + h);
-        }
+            // Get the absolute bounds of both elements
+            Rect bounds1 = element1.Bounds;
+            Rect bounds2 = element2.Bounds;
 
-        private bool Intersects(
-            (double Left, double Top, double Right, double Bottom) a,
-            (double Left, double Top, double Right, double Bottom) b)
-        {
-            return a.Left < b.Right &&
-                   a.Right > b.Left &&
-                   a.Top < b.Bottom &&
-                   a.Bottom > b.Top;
+            // Check if the two rectangles intersect
+            return bounds1.IntersectsWith(bounds2);
         }
 
         // --- Other ---
@@ -256,61 +231,56 @@ namespace RaindropFall
         /// </summary>
         private double FindSafeSpawnPosition(FlowGroup group, double preferredX)
         {
-            if (SceneProperties.GameWidth <= 0 || SceneProperties.GameHeight <= 0) return preferredX;
-
-            var playerBounds = GetBoundsProportional(
-                _playerCharacter.X,
-                _playerCharacter.Y,
-                SceneProperties.PxFromWidthPercent(_playerCharacter.Size));
+            // Store the original position to restore after checking
+            double originalGroupX = group.X;
+            group.X = preferredX;
+            group.UpdateUI();
 
             // Check if any member would intersect with player at preferred position
             bool hasIntersection = false;
             foreach (var member in group.Members)
             {
-                double objX = preferredX + member.OffsetX;
-                double objY = group.Y + member.OffsetY; // group.Y should be 1.2 (spawn position)
-
-                var objBounds = GetBoundsProportional(
-                    objX,
-                    objY,
-                    SceneProperties.PxFromWidthPercent(member.ChildObject.Size));
-
-                if (Intersects(playerBounds, objBounds))
+                if (CheckForCollision(_playerCharacter.Visual, member.ChildObject.Visual))
                 {
                     hasIntersection = true;
                     break;
                 }
             }
 
-            // If no intersection, use preferred position
-            if (!hasIntersection) return preferredX;
+            // If no intersection, restore and return preferred position
+            if (!hasIntersection)
+            {
+                group.X = originalGroupX;
+                return preferredX;
+            }
 
             // Try alternative positions: left, right, then random
             double[] alternatives = { 0.2, 0.8, _random.NextDouble() };
             
             foreach (double altX in alternatives)
             {
+                group.X = altX;
+                group.UpdateUI();
+
                 bool safe = true;
                 foreach (var member in group.Members)
                 {
-                    double objX = altX + member.OffsetX;
-                    double objY = group.Y + member.OffsetY;
-
-                    var objBounds = GetBoundsProportional(
-                        objX,
-                        objY,
-                        SceneProperties.PxFromWidthPercent(member.ChildObject.Size));
-
-                    if (Intersects(playerBounds, objBounds))
+                    if (CheckForCollision(_playerCharacter.Visual, member.ChildObject.Visual))
                     {
                         safe = false;
                         break;
                     }
                 }
 
-                if (safe) return altX;
+                if (safe)
+                {
+                    group.X = originalGroupX;
+                    return altX;
+                }
             }
 
+            // Restore original position
+            group.X = originalGroupX;
             // If all positions intersect, return preferred (shouldn't happen often)
             return preferredX;
         }
