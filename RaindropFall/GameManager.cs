@@ -65,7 +65,7 @@ namespace RaindropFall
             // --- Visuals ---
             _root.BackgroundColor = level.BackgroundColor;
 
-            _scene.Children.Add(_testGroup.Visual);     // The invisible anchor (FlowGroup itself)
+            // Add visuals for all group members
             foreach (var member in _testGroup.Members)
             {
                 _scene.Children.Add(member.ChildObject.Visual);
@@ -203,16 +203,11 @@ namespace RaindropFall
                 }
             }
 
-            // Spawn the group (this will recreate all members as new FlowObjects)
-            group.Spawn(startX);
-
             // Check for intersections with player and adjust spawn position if needed
             double safeX = FindSafeSpawnPosition(group, startX);
-            if (safeX != startX)
-            {
-                group.X = safeX;
-                group.UpdateUI();
-            }
+
+            // Spawn the group (this will recreate all members as new FlowObjects)
+            group.Spawn(safeX);
 
             // Add new member UI elements to scene
             foreach (var member in group.Members)
@@ -231,26 +226,58 @@ namespace RaindropFall
         /// </summary>
         private double FindSafeSpawnPosition(FlowGroup group, double preferredX)
         {
-            // Store the original position to restore after checking
-            double originalGroupX = group.X;
-            group.X = preferredX;
-            group.UpdateUI();
-
-            // Check if any member would intersect with player at preferred position
-            bool hasIntersection = false;
-            foreach (var member in group.Members)
+            // Helper function to check if a position is safe
+            bool IsPositionSafe(double testX)
             {
-                if (CheckForCollision(_playerCharacter.Visual, member.ChildObject.Visual))
+                // Create temporary members to test collision
+                var tempMembers = new List<GroupMember>();
+                foreach (var template in group.Members)
                 {
-                    hasIntersection = true;
-                    break;
+                    var tempObstacle = new FlowObject(
+                        template.ChildObject.Visual.Color,
+                        template.ChildObject.Size,
+                        group.Speed);
+                    tempObstacle.Spawn(testX + template.OffsetX);
+                    tempObstacle.Y = tempObstacle.Y + template.OffsetY;
+                    
+                    // Add to scene temporarily so bounds are accurate
+                    _scene.Children.Add(tempObstacle.Visual);
+                    tempObstacle.UpdateUI();
+                    
+                    tempMembers.Add(new GroupMember
+                    {
+                        ChildObject = tempObstacle,
+                        OffsetX = template.OffsetX,
+                        OffsetY = template.OffsetY
+                    });
                 }
+
+                // Check for collisions
+                bool hasCollision = false;
+                foreach (var member in tempMembers)
+                {
+                    if (CheckForCollision(_playerCharacter.Visual, member.ChildObject.Visual))
+                    {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+
+                // Clean up temp members
+                foreach (var member in tempMembers)
+                {
+                    if (_scene.Children.Contains(member.ChildObject.Visual))
+                    {
+                        _scene.Children.Remove(member.ChildObject.Visual);
+                    }
+                }
+
+                return !hasCollision;
             }
 
-            // If no intersection, restore and return preferred position
-            if (!hasIntersection)
+            // Check preferred position first
+            if (IsPositionSafe(preferredX))
             {
-                group.X = originalGroupX;
                 return preferredX;
             }
 
@@ -259,28 +286,12 @@ namespace RaindropFall
             
             foreach (double altX in alternatives)
             {
-                group.X = altX;
-                group.UpdateUI();
-
-                bool safe = true;
-                foreach (var member in group.Members)
+                if (IsPositionSafe(altX))
                 {
-                    if (CheckForCollision(_playerCharacter.Visual, member.ChildObject.Visual))
-                    {
-                        safe = false;
-                        break;
-                    }
-                }
-
-                if (safe)
-                {
-                    group.X = originalGroupX;
                     return altX;
                 }
             }
 
-            // Restore original position
-            group.X = originalGroupX;
             // If all positions intersect, return preferred (shouldn't happen often)
             return preferredX;
         }

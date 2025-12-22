@@ -20,20 +20,21 @@ namespace RaindropFall
         public double Size { get; set; }
     }
 
-    public class FlowGroup : FlowObject
+    public class FlowGroup
     {
+        // Shared speed for all members
+        public double Speed { get; set; }
+
         // List of all children in this Group
         public List<GroupMember> Members { get; set; } = new List<GroupMember>();
 
         // Template data for recreating members on spawn
         private readonly List<ObstacleTemplate> _formationTemplate = new List<ObstacleTemplate>();
 
-        // Constructor passes default values to base
-        // The Grouop itself is invisible to act as Anchor
-        public FlowGroup(double speed) : base(Colors.Transparent, 100, speed)
+        // Constructor - FlowGroup is just a container/organizer, not a moving object
+        public FlowGroup(double speed)
         {
-            // Make the anchor completely invisible
-            Visual.IsVisible = false;
+            Speed = speed;
         }
 
         /// <summary>
@@ -84,57 +85,70 @@ namespace RaindropFall
         }
 
         /// <summary>
-        /// Called every frame to move the object and its children
-        /// Returns False if group has despawned
+        /// Called every frame to update all members
+        /// Returns False if all members have despawned
         /// </summary>
-        public override bool Update(double deltaTime)
+        public bool Update(double deltaTime)
         {
-            bool isStillActive = base.Update(deltaTime);
+            bool anyActive = false;
 
-            if (isStillActive)
+            // Update each member individually
+            for (int i = 0; i < Members.Count; i++)
             {
-                UpdateUI();
+                if (Members[i].ChildObject.IsActive)
+                {
+                    bool isStillActive = Members[i].ChildObject.Update(deltaTime);
+                    if (isStillActive)
+                    {
+                        anyActive = true;
+                        // UpdateUI is called inside FlowObject.Update, but we ensure it's called here too
+                        Members[i].ChildObject.UpdateUI();
+                    }
+                }
             }
 
-            return isStillActive;
+            return anyActive;
         }
 
         /// <summary>
-        /// Overrides the base Spawn to recreate all members as new FlowObjects
+        /// Spawns all members at positions relative to startX
+        /// Each member spawns at startX + offsetX horizontally
         /// </summary>
-        public override void Spawn(double startX)
+        public void Spawn(double startX)
         {
             // Recreate all members as new FlowObjects
             RecreateMembers();
 
-            // Spawn the group itself
-            base.Spawn(startX);
-
-            // Ensure all new members are active and visible
+            // Spawn each member at its relative position
             foreach (var member in Members)
             {
+                // Spawn at startX + offsetX horizontally
+                // Y position is set by FlowObject.Spawn (1.2), then adjusted by offsetY
+                member.ChildObject.Spawn(startX + member.OffsetX);
+                // Adjust Y position by offsetY (1.2 is the base spawn Y)
+                member.ChildObject.Y = member.ChildObject.Y + member.OffsetY;
+                
+                // Ensure member is active and visible
                 member.ChildObject.IsActive = true;
                 member.ChildObject.Visual.IsVisible = true;
+                
+                // Update UI to reflect the position
+                member.ChildObject.UpdateUI();
             }
         }
 
         /// <summary>
-        /// Overrides the base UpdateUI to move ALL children relative to the Group Center (Anchor)
+        /// Updates UI for all active members
         /// </summary>
-        public override void UpdateUI()
+        public void UpdateUI()
         {
-            // Update UI for the Group itself (for position)
-            base.UpdateUI();
-
-            // Update UI for all Group members
-            for (int i = 0; i < Members.Count; i++)
+            // Update UI for all active Group members
+            foreach (var member in Members)
             {
-                // Calculate absolute position based on Group Anchor + Offset
-                Members[i].ChildObject.X = this.X + Members[i].OffsetX;
-                Members[i].ChildObject.Y = this.Y + Members[i].OffsetY;
-
-                // Update UI for child
-                Members[i].ChildObject.UpdateUI();
+                if (member.ChildObject.IsActive)
+                {
+                    member.ChildObject.UpdateUI();
+                }
             }
         }
     }

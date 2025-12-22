@@ -23,8 +23,8 @@ public static class LevelCatalog
     private static void BuildVFormation(FlowGroup g)
     {
         g.AddObstacle(0.0, 0.0, Colors.Red, 10);
-        g.AddObstacle(-0.25, 0.1, Colors.DarkRed, 10);
-        g.AddObstacle(0.25, 0.1, Colors.PaleVioletRed, 10);
+        g.AddObstacle(-0.25, 0.1, Colors.DarkRed, 5);
+        g.AddObstacle(0.25, 0.1, Colors.PaleVioletRed, 5);
     }
 
     private static void BuildLineFormation(FlowGroup g)
