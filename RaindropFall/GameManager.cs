@@ -179,8 +179,18 @@ namespace RaindropFall
 
         private (double Left, double Top, double Right, double Bottom) GetBoundsProportional(double x, double y, double sizePx)
         {
-            double w = sizePx / SceneProperties.GameWidth;
-            double h = sizePx / SceneProperties.GameHeight;
+            // Convert pixel size to proportional coordinates
+            // With PositionProportional flag, X and Y represent the top-left corner (0.0 to 1.0)
+            // sizePx is the object's size in pixels (square object)
+            
+            // Convert pixel dimensions to proportional units
+            // Since Size is defined as % of width, we convert width using GameWidth
+            double w = sizePx / SceneProperties.GameWidth;  // Width in proportional units (0.0 to 1.0)
+            // For height, we need to account for the aspect ratio
+            // A square object in pixels becomes a rectangle in proportional space if GameWidth != GameHeight
+            double h = sizePx / SceneProperties.GameHeight; // Height in proportional units (0.0 to 1.0)
+            
+            // X, Y is top-left corner, so bounds extend from (x, y) to (x + w, y + h)
             return (x, y, x + w, y + h);
         }
 
@@ -198,11 +208,111 @@ namespace RaindropFall
 
         /// <summary>
         /// Spawn FlowGroup at a specified horizontal position
+        /// Ensures no intersections with player on spawn
         /// </summary>
-        private void SpawnFlowGroup(FlowObject obj, double startX)
+        private void SpawnFlowGroup(FlowGroup group, double startX)
         {
-            obj.Spawn(startX);
+            // Store old member UI elements before recreating (Spawn will clear Members)
+            var oldVisuals = new List<BoxView>();
+            foreach (var member in group.Members)
+            {
+                oldVisuals.Add(member.ChildObject.Visual);
+            }
+
+            // Remove old member UI elements from scene
+            foreach (var visual in oldVisuals)
+            {
+                if (_scene.Children.Contains(visual))
+                {
+                    _scene.Children.Remove(visual);
+                }
+            }
+
+            // Spawn the group (this will recreate all members as new FlowObjects)
+            group.Spawn(startX);
+
+            // Check for intersections with player and adjust spawn position if needed
+            double safeX = FindSafeSpawnPosition(group, startX);
+            if (safeX != startX)
+            {
+                group.X = safeX;
+                group.UpdateUI();
+            }
+
+            // Add new member UI elements to scene
+            foreach (var member in group.Members)
+            {
+                if (!_scene.Children.Contains(member.ChildObject.Visual))
+                {
+                    _scene.Children.Add(member.ChildObject.Visual);
+                }
+            }
+
             Debug.WriteLine("Flow Group Spawned!");
+        }
+
+        /// <summary>
+        /// Finds a safe spawn position that doesn't intersect with the player
+        /// </summary>
+        private double FindSafeSpawnPosition(FlowGroup group, double preferredX)
+        {
+            if (SceneProperties.GameWidth <= 0 || SceneProperties.GameHeight <= 0) return preferredX;
+
+            var playerBounds = GetBoundsProportional(
+                _playerCharacter.X,
+                _playerCharacter.Y,
+                SceneProperties.PxFromWidthPercent(_playerCharacter.Size));
+
+            // Check if any member would intersect with player at preferred position
+            bool hasIntersection = false;
+            foreach (var member in group.Members)
+            {
+                double objX = preferredX + member.OffsetX;
+                double objY = group.Y + member.OffsetY; // group.Y should be 1.2 (spawn position)
+
+                var objBounds = GetBoundsProportional(
+                    objX,
+                    objY,
+                    SceneProperties.PxFromWidthPercent(member.ChildObject.Size));
+
+                if (Intersects(playerBounds, objBounds))
+                {
+                    hasIntersection = true;
+                    break;
+                }
+            }
+
+            // If no intersection, use preferred position
+            if (!hasIntersection) return preferredX;
+
+            // Try alternative positions: left, right, then random
+            double[] alternatives = { 0.2, 0.8, _random.NextDouble() };
+            
+            foreach (double altX in alternatives)
+            {
+                bool safe = true;
+                foreach (var member in group.Members)
+                {
+                    double objX = altX + member.OffsetX;
+                    double objY = group.Y + member.OffsetY;
+
+                    var objBounds = GetBoundsProportional(
+                        objX,
+                        objY,
+                        SceneProperties.PxFromWidthPercent(member.ChildObject.Size));
+
+                    if (Intersects(playerBounds, objBounds))
+                    {
+                        safe = false;
+                        break;
+                    }
+                }
+
+                if (safe) return altX;
+            }
+
+            // If all positions intersect, return preferred (shouldn't happen often)
+            return preferredX;
         }
     }
 }

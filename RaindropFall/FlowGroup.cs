@@ -11,10 +11,22 @@ namespace RaindropFall
         public double OffsetY { get; set; } // REMEBER: 0.0 is center ; 0.1 is below
     }
 
+    // Template data for recreating obstacles
+    public class ObstacleTemplate
+    {
+        public double OffsetX { get; set; }
+        public double OffsetY { get; set; }
+        public Color Color { get; set; }
+        public double Size { get; set; }
+    }
+
     public class FlowGroup : FlowObject
     {
         // List of all children in this Group
         public List<GroupMember> Members { get; set; } = new List<GroupMember>();
+
+        // Template data for recreating members on spawn
+        private readonly List<ObstacleTemplate> _formationTemplate = new List<ObstacleTemplate>();
 
         // Constructor passes default values to base
         // The Grouop itself is invisible to act as Anchor
@@ -29,6 +41,16 @@ namespace RaindropFall
         /// </summary>
         public void AddObstacle(double offsetX, double offsetY, Color color, double size)
         {
+            // Store template data for recreation
+            _formationTemplate.Add(new ObstacleTemplate
+            {
+                OffsetX = offsetX,
+                OffsetY = offsetY,
+                Color = color,
+                Size = size
+            });
+
+            // Create initial obstacle
             var newObstacle = new FlowObject(color, size, this.Speed);
 
             Members.Add(new GroupMember
@@ -37,6 +59,28 @@ namespace RaindropFall
                 OffsetX = offsetX,
                 OffsetY = offsetY
             });
+        }
+
+        /// <summary>
+        /// Recreates all members from template, ensuring fresh FlowObjects
+        /// </summary>
+        private void RecreateMembers()
+        {
+            // Clear existing members (old FlowObjects will be garbage collected)
+            Members.Clear();
+
+            // Recreate all members from template
+            foreach (var template in _formationTemplate)
+            {
+                var newObstacle = new FlowObject(template.Color, template.Size, this.Speed);
+
+                Members.Add(new GroupMember
+                {
+                    ChildObject = newObstacle,
+                    OffsetX = template.OffsetX,
+                    OffsetY = template.OffsetY
+                });
+            }
         }
 
         /// <summary>
@@ -53,6 +97,25 @@ namespace RaindropFall
             }
 
             return isStillActive;
+        }
+
+        /// <summary>
+        /// Overrides the base Spawn to recreate all members as new FlowObjects
+        /// </summary>
+        public override void Spawn(double startX)
+        {
+            // Recreate all members as new FlowObjects
+            RecreateMembers();
+
+            // Spawn the group itself
+            base.Spawn(startX);
+
+            // Ensure all new members are active and visible
+            foreach (var member in Members)
+            {
+                member.ChildObject.IsActive = true;
+                member.ChildObject.Visual.IsVisible = true;
+            }
         }
 
         /// <summary>
