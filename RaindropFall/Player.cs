@@ -18,9 +18,9 @@ namespace RaindropFall
         // Movement
         public MoveState MovementState { get; set; } = MoveState.Idle;
         public Direction CurrentDirection { get; private set; } = Direction.None;
-        public double MaxSpeed { get; set; }                        // % of Screen per second (Max Speed)
+        public double MaxSpeed { get; set; }                        // Virtual units per second (100 = GameWidth per second)
         public double CurrentSpeed { get; private set; } = 0.0;     // Current speed (StartingSpeedPercent * Speed => Speed)
-        public double Acceleration { get; set; }                    // % of Screen per second^2
+        public double Acceleration { get; set; }                    // Virtual units per second^2
         public double StartingSpeedPercent { get; set; } = 0.5;     // Starting speed as % of Max Speed (0.5 = 50%)
         // HP
         public int Health { get; private set; } = 100;      // HP

@@ -2,6 +2,8 @@
 using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Graphics;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 
 namespace RaindropFall
@@ -16,7 +18,7 @@ namespace RaindropFall
 
         // Game Objects
         public readonly Player _playerCharacter;
-        private FlowGroup _testGroup;
+        private readonly List<FlowGroup> _flowGroups = new List<FlowGroup>();
 
         // Level
         private readonly LevelProperties _level;
@@ -28,6 +30,22 @@ namespace RaindropFall
         // Misc
         private bool _isGameOver;
         private readonly Random _random = new Random();
+        
+        // FlowGroup Management
+        /// <summary>
+        /// Distance in virtual units past the center where FlowGroups should spawn and despawn
+        /// </summary>
+        public double RenderDistance { get; set; } = 200;       // Virtual units
+        
+        /// <summary>
+        /// Distance in virtual units between FlowGroups when spawning
+        /// </summary>
+        public double FlowGroupDistance { get; set; } = 100;    // Virtual units
+        
+        /// <summary>
+        /// Y position of the most recently spawned group (to prevent infinite spawning)
+        /// </summary>
+        private double _lastSpawnY = double.MaxValue;
 
         // --- Constructor ---
 
@@ -56,25 +74,12 @@ namespace RaindropFall
             _playerCharacter.HealthPercentChanged += hp => PlayerHealthPercentChanged?.Invoke(hp);
             PlayerHealthPercentChanged?.Invoke(_playerCharacter.HealthPercent);
 
-            // Test Group
-            _testGroup = new FlowGroup(level.FallingSpeed);
-            // Build the Group
-            // With pre-built formation
-            level.BuildFormation(_testGroup);
-
             // --- Visuals ---
             _root.BackgroundColor = level.BackgroundColor;
 
-            // Add visuals for all group members
-            foreach (var member in _testGroup.Members)
-            {
-                _scene.Children.Add(member.ChildObject.Visual);
-            }
-
             // --- Initial Spawn ---
-
-            // Test Group
-            SpawnFlowGroup(_testGroup, 0.5);
+            // Spawn the first FlowGroup
+            SpawnNewFlowGroup(0.5);
         }
 
         // --- Event Management ---
@@ -106,19 +111,60 @@ namespace RaindropFall
         {
             if (_isGameOver) return;
 
-            // Update the Group
-            bool isStillActive = _testGroup.Update(deltaTime);
-
-            if (!isStillActive)
+            // Update all FlowGroups and remove despawned ones
+            for (int i = _flowGroups.Count - 1; i >= 0; i--)
             {
-                // Respawn Group on its despawn
-                SpawnFlowGroup(_testGroup, 0.5);
+                bool isStillActive = _flowGroups[i].Update(deltaTime);
+                if (!isStillActive)
+                {
+                    // Remove despawned group
+                    _flowGroups.RemoveAt(i);
+                }
+            }
+
+            // Check if we need to spawn a new group
+            // Spawn a new group if there are no groups, or if the furthest group has moved enough
+            if (_flowGroups.Count == 0)
+            {
+                // No groups exist, spawn one at center
+                SpawnNewFlowGroup(0.5);
+            }
+            else
+            {
+                // Find the group with the highest Y position (closest to spawn point)
+                // Groups move upward (Y decreases), so highest Y = closest to spawn
+                double highestY = _flowGroups.Max(g => GetGroupHighestY(g));
+                
+                // Calculate how far the closest group has moved from the last spawn position
+                double distanceFromLastSpawn = _lastSpawnY - highestY;
+                
+                // Convert FlowGroupDistance to proportional coordinates for comparison
+                double flowGroupDistanceProportional = SceneProperties.ProportionalFromVirtualUnitsY(FlowGroupDistance);
+                
+                // If the closest group has moved FlowGroupDistance units from last spawn, spawn a new one
+                if (distanceFromLastSpawn >= flowGroupDistanceProportional)
+                {
+                    // Spawn new group at the same X position (or randomize if desired)
+                    SpawnNewFlowGroup(0.5);
+                }
             }
 
             // Update the Player
             _playerCharacter.Update(deltaTime);
 
             CheckCollisionsAndApplyDamage();
+        }
+        
+        /// <summary>
+        /// Gets the highest Y position (closest to spawn point) of any member in a FlowGroup
+        /// </summary>
+        private double GetGroupHighestY(FlowGroup group)
+        {
+            if (group.Members.Count == 0) return double.MinValue;
+            return group.Members.Where(m => m.ChildObject.IsActive)
+                               .Select(m => m.ChildObject.Y)
+                               .DefaultIfEmpty(double.MinValue)
+                               .Max();
         }
 
         // --- Player ---
@@ -137,80 +183,83 @@ namespace RaindropFall
 
         /// <summary>
         /// Checks all possible Collisions and applies damage if needeed
-        /// Currently only checks for TestGroup collisions
+        /// Checks collisions with all FlowGroups
         /// </summary>
         private void CheckCollisionsAndApplyDamage()
         {
-            foreach (var member in _testGroup.Members)
+            foreach (var group in _flowGroups)
             {
-                var obj = member.ChildObject;
-                if (!obj.IsActive) continue;
-
-                if (CheckForCollision(_playerCharacter, obj))
+                foreach (var member in group.Members)
                 {
-                    // Disable collided object
-                    obj.IsActive = false;
-                    obj.Visual.IsVisible = false;
+                    var obj = member.ChildObject;
+                    if (!obj.IsActive) continue;
 
-                    // Update Player stats
-                    _playerCharacter.TakeDamage(_level.DamagePerHit);
-
-                    // Invoke GameOver
-                    if (_playerCharacter.Health <= 0)
+                    if (CheckForCollision(_playerCharacter, obj))
                     {
-                        _isGameOver = true;
-                        GameOver?.Invoke();
+                        // Disable collided object
+                        obj.IsActive = false;
+                        obj.Visual.IsVisible = false;
+
+                        // Update Player stats
+                        _playerCharacter.TakeDamage(_level.DamagePerHit);
+
+                        // Invoke GameOver
+                        if (_playerCharacter.Health <= 0)
+                        {
+                            _isGameOver = true;
+                            GameOver?.Invoke();
+                        }
+                        return;
                     }
-                    return;
                 }
             }
         }
 
         /// <summary>
-        /// Checks if two GameObjects are colliding based on their position and size (proportional coordinates)
-        /// Uses math-based collision detection to avoid expensive Bounds property access
+        /// Checks if two GameObjects are colliding using their visual Bounds
+        /// Uses AABB (Axis-Aligned Bounding Box) collision detection
         /// </summary>
         private bool CheckForCollision(GameObject obj1, GameObject obj2)
         {
-            // Size is a percentage of screen width
-            // Convert to proportional coordinates: Size% / 100 = proportional size
-            double proportionalSize1 = obj1.Size / 100.0;
-            double proportionalSize2 = obj2.Size / 100.0;
+            // Ensure visuals are updated and have valid bounds
+            if (obj1.Visual == null || obj2.Visual == null) return false;
             
-            // Calculate half-sizes in proportional coordinates
-            double halfSize1X = proportionalSize1 / 2.0;
-            double halfSize2X = proportionalSize2 / 2.0;
+            // Get the actual rendered bounds of both visuals
+            var bounds1 = obj1.Visual.Bounds;
+            var bounds2 = obj2.Visual.Bounds;
             
-            // For Y, we need to account for aspect ratio since Size is width-based
-            // Objects are squares in pixels, but proportional Y size depends on GameHeight
-            double aspectRatio = SceneProperties.GameHeight / SceneProperties.GameWidth;
-            double halfSize1Y = (proportionalSize1 / aspectRatio) / 2.0;
-            double halfSize2Y = (proportionalSize2 / aspectRatio) / 2.0;
-
-            // Check if rectangles overlap (using AABB collision detection)
-            bool overlapX = Math.Abs(obj1.X - obj2.X) < (halfSize1X + halfSize2X);
-            bool overlapY = Math.Abs(obj1.Y - obj2.Y) < (halfSize1Y + halfSize2Y);
-
+            // Check if rectangles overlap using AABB collision detection
+            bool overlapX = bounds1.Left < bounds2.Right && bounds1.Right > bounds2.Left;
+            bool overlapY = bounds1.Top < bounds2.Bottom && bounds1.Bottom > bounds2.Top;
+            
             return overlapX && overlapY;
         }
 
         // --- Other ---
 
         /// <summary>
-        /// Spawn FlowGroup at a specified horizontal position
-        /// Spawns at constant Y position 1.2
-        /// Optimized to avoid removing/adding UI elements (which causes expensive layout passes on Android)
+        /// Creates and spawns a new FlowGroup at a specified horizontal position
         /// </summary>
-        private void SpawnFlowGroup(FlowGroup group, double startX)
+        private void SpawnNewFlowGroup(double startX)
         {
-            // Since RecreateMembers() now reuses existing objects, we don't need to remove/add visuals
-            // The same BoxView objects stay in the scene, we just update their properties
-            
-            // Spawn the group at the specified X position (Y will be set to 1.2 in Spawn)
-            group.Spawn(startX);
+            // Calculate spawn Y position and update last spawn tracking
+            double spawnYProportional = 0.5 + SceneProperties.ProportionalFromVirtualUnitsY(RenderDistance);
+            _lastSpawnY = spawnYProportional;
 
-            // Ensure all visuals are in the scene (only add if missing - should only happen on first spawn)
-            foreach (var member in group.Members)
+            // Create a new FlowGroup
+            var newGroup = new FlowGroup(_level.FallingSpeed, RenderDistance);
+            
+            // Build the formation using the level's formation builder
+            _level.BuildFormation(newGroup);
+            
+            // Add to the list of active groups
+            _flowGroups.Add(newGroup);
+            
+            // Spawn the group at the specified X position
+            newGroup.Spawn(startX);
+            
+            // Ensure all visuals are in the scene
+            foreach (var member in newGroup.Members)
             {
                 if (!_scene.Children.Contains(member.ChildObject.Visual))
                 {
@@ -219,7 +268,7 @@ namespace RaindropFall
             }
 
             #if DEBUG && !ANDROID
-            Debug.WriteLine("Flow Group Spawned!");
+            Debug.WriteLine($"Flow Group Spawned! Total groups: {_flowGroups.Count}");
             #endif
         }
     }

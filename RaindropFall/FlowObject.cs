@@ -7,13 +7,15 @@ namespace RaindropFall
     {
         public const int OBJECT_ZINDEX = 20;   // Generic Object Layer
 
-        public double Speed { get; set; } // Proportional units per second (100 - 100% Screen)
+        public double Speed { get; set; } // Virtual units per second (100 = GameWidth per second)
+        public double RenderDistance { get; set; } // Virtual units past center for spawn/despawn
 
-        public FlowObject(Color color, double size, double speed) : base(size)
+        public FlowObject(Color color, double size, double speed, double renderDistance = 20.0) : base(size)
         {
-            // Size is counted as a % of the Scene (area with interactive objects)
+            // Size is in virtual units (100 = GameWidth)
             Size = size;
             Speed = speed;
+            RenderDistance = renderDistance;
             IsActive = true;
 
             // Initialize the UI
@@ -34,7 +36,10 @@ namespace RaindropFall
         public virtual void Spawn(double startX)
         {
             X = startX;
-            Y = 1.2;
+            // Spawn at center (0.5) + RenderDistance converted to proportional coordinates
+            // Using Y conversion to account for aspect ratio
+            double spawnYProportional = 0.5 + SceneProperties.ProportionalFromVirtualUnitsY(RenderDistance);
+            Y = spawnYProportional;
             IsActive = true;
             UpdateUI();
         }
@@ -57,8 +62,9 @@ namespace RaindropFall
             // Update the UI and its Position on the screen
             UpdateUI();
 
-            // Check Y position if above top boundary to despawn
-            if (Y < -0.2)
+            // Check Y position if past despawn boundary (center - RenderDistance)
+            double despawnYProportional = 0.5 - SceneProperties.ProportionalFromVirtualUnitsY(RenderDistance);
+            if (Y < despawnYProportional)
             {
                 IsActive = false;
                 return false;

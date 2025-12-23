@@ -32,16 +32,31 @@
         }
 
         // --- Helpers ---
+        // Virtual Units: 100 units = 100% of GameWidth
+        // This provides a consistent measurement system for sizes, speeds, and offsets
+        
         /// <summary>
-        /// Size => Pixels
+        /// Converts virtual units to pixels based on GameWidth
+        /// 100 virtual units = GameWidth
         /// </summary>
-        public static double PxFromWidthPercent(double percent)
-            => GameWidth * (percent / 100.0);
+        public static double PxFromVirtualUnits(double units)
+            => GameWidth * (units / 100.0);
 
         /// <summary>
-        /// % of the overall Scene size
+        /// Converts virtual units to proportional coordinates (0.0 to 1.0) for X axis
+        /// Used for positioning objects on screen horizontally
         /// </summary>
-        public static double ProportionalFromWidthPercent(double percent)
-            => (PxFromWidthPercent(percent) / GameWidth);
+        public static double ProportionalFromVirtualUnits(double units)
+            => units / 100.0;
+
+        /// <summary>
+        /// Converts virtual units to proportional coordinates (0.0 to 1.0) for Y axis
+        /// Accounts for aspect ratio so Y offsets match X offsets visually
+        /// </summary>
+        public static double ProportionalFromVirtualUnitsY(double units)
+        {
+            double aspectRatio = GameHeight / GameWidth;
+            return (units / 100.0) / aspectRatio;
+        }
     }
 }

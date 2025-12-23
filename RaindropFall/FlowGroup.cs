@@ -7,9 +7,9 @@ namespace RaindropFall
     public class GroupMember
     {
         public FlowObject ChildObject { get; set; }
-        // offset relative to Group Center
-        public double OffsetX { get; set; } // REMEBER: 0.0 is center ; -0.1 is left
-        public double OffsetY { get; set; } // REMEBER: 0.0 is center ; 0.1 is below
+        // offset relative to Group Center (in virtual units where 100 = 100% of GameWidth)
+        public double OffsetX { get; set; } // Virtual units (e.g., 5.0 = 5% of GameWidth)
+        public double OffsetY { get; set; } // Virtual units (e.g., 5.0 = 5% of GameWidth, same scale as X)
     }
 
     // Template data for recreating obstacles
@@ -25,6 +25,9 @@ namespace RaindropFall
     {
         // Shared speed for all members
         public double Speed { get; set; }
+        
+        // Render distance for spawn/despawn
+        public double RenderDistance { get; set; }
 
         // List of all children in this Group
         public List<GroupMember> Members { get; set; } = new List<GroupMember>();
@@ -33,9 +36,10 @@ namespace RaindropFall
         private readonly List<ObstacleTemplate> _formationTemplate = new List<ObstacleTemplate>();
 
         // Constructor - FlowGroup is just a container/organizer, not a moving object
-        public FlowGroup(double speed)
+        public FlowGroup(double speed, double renderDistance = 20.0)
         {
             Speed = speed;
+            RenderDistance = renderDistance;
         }
 
         /// <summary>
@@ -53,7 +57,7 @@ namespace RaindropFall
             });
 
             // Create initial obstacle
-            var newObstacle = new FlowObject(color, size, this.Speed);
+            var newObstacle = new FlowObject(color, size, this.Speed, this.RenderDistance);
 
             Members.Add(new GroupMember
             {
@@ -97,7 +101,7 @@ namespace RaindropFall
             // Recreate all members from template
             foreach (var template in _formationTemplate)
             {
-                var newObstacle = new FlowObject(template.Color, template.Size, this.Speed);
+                var newObstacle = new FlowObject(template.Color, template.Size, this.Speed, this.RenderDistance);
 
                 Members.Add(new GroupMember
                 {
@@ -145,15 +149,21 @@ namespace RaindropFall
             // Spawn each member at its relative position
             foreach (var member in Members)
             {
+                // Convert offsets from virtual units to proportional coordinates
+                // Both X and Y use the same scale (100 units = GameWidth), ensuring visual consistency
+                // Y conversion accounts for aspect ratio so visual distances match
+                double offsetXProportional = SceneProperties.ProportionalFromVirtualUnits(member.OffsetX);
+                double offsetYProportional = SceneProperties.ProportionalFromVirtualUnitsY(member.OffsetY);
+                
                 // Spawn at startX + offsetX horizontally
                 // Y position is set by FlowObject.Spawn (1.2), then adjusted by offsetY
-                member.ChildObject.Spawn(startX + member.OffsetX);
+                member.ChildObject.Spawn(startX + offsetXProportional);
                 // Adjust Y position by offsetY (1.2 is the base spawn Y)
-                member.ChildObject.Y = member.ChildObject.Y + member.OffsetY;
+                member.ChildObject.Y = member.ChildObject.Y + offsetYProportional;
                 
                 // DEBUG: Log spawn information
                 #if DEBUG && !ANDROID
-                Debug.WriteLine($"[FLOWOBJECT SPAWN] Size: {member.ChildObject.Size}%, Speed: {member.ChildObject.Speed}, StartY: {member.ChildObject.Y:F4}, StartX: {member.ChildObject.X:F4}, OffsetX: {member.OffsetX:F4}, OffsetY: {member.OffsetY:F4}");
+                Debug.WriteLine($"[FLOWOBJECT SPAWN] Size: {member.ChildObject.Size} units, Speed: {member.ChildObject.Speed} units/s, StartY: {member.ChildObject.Y:F4}, StartX: {member.ChildObject.X:F4}, OffsetX: {member.OffsetX:F4}, OffsetY: {member.OffsetY:F4}");
                 #endif
                 
                 // Ensure member is active and visible
