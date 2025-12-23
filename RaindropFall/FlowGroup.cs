@@ -1,4 +1,5 @@
 ﻿using Microsoft.Maui.Graphics;
+using System.Diagnostics;
 
 namespace RaindropFall
 {
@@ -127,6 +128,9 @@ namespace RaindropFall
                 member.ChildObject.Spawn(startX + member.OffsetX);
                 // Adjust Y position by offsetY (1.2 is the base spawn Y)
                 member.ChildObject.Y = member.ChildObject.Y + member.OffsetY;
+                
+                // DEBUG: Log spawn information
+                Debug.WriteLine($"[FLOWOBJECT SPAWN] Size: {member.ChildObject.Size}%, Speed: {member.ChildObject.Speed}, StartY: {member.ChildObject.Y:F4}, StartX: {member.ChildObject.X:F4}, OffsetX: {member.OffsetX:F4}, OffsetY: {member.OffsetY:F4}");
                 
                 // Ensure member is active and visible
                 member.ChildObject.IsActive = true;

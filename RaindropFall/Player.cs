@@ -32,11 +32,15 @@ namespace RaindropFall
 
         // Constructor
         public Player(double initialX, double initialY, double size, BoxView visual, double speed, double acceleration)
-            : base(initialX, initialY, size)
+            : base(size)
         {
             Visual = visual;
             MaxSpeed = speed;
             Acceleration = acceleration;
+
+            X = initialX;
+            Y = initialY;
+
             UpdateUI(); // Set initial position
 
             // Set ZIndex

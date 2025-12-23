@@ -16,17 +16,14 @@ namespace RaindropFall
         public double Size;
 
         // Constructor
-        protected GameObject(double initialX, double initialY, double size)
+        protected GameObject(double size)
         {
-            X = initialX;
-            Y = initialY;
             Size = size;
 
             // Initialize the UI
             Visual = new BoxView
             {
-                Color = Colors.White,
-                CornerRadius = 3
+                Color = Colors.White
             };
         }
 
