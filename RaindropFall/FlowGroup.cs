@@ -64,10 +64,33 @@ namespace RaindropFall
         }
 
         /// <summary>
-        /// Recreates all members from template, ensuring fresh FlowObjects
+        /// Recreates all members from template, reusing existing objects when possible to reduce GC pressure
         /// </summary>
         private void RecreateMembers()
         {
+            // If we already have the right number of members, reuse them instead of recreating
+            if (Members.Count == _formationTemplate.Count)
+            {
+                // Reuse existing members - just reset their properties
+                for (int i = 0; i < Members.Count; i++)
+                {
+                    var template = _formationTemplate[i];
+                    var existingObstacle = Members[i].ChildObject;
+                    
+                    // Update properties without creating new object
+                    existingObstacle.Size = template.Size;
+                    existingObstacle.Speed = this.Speed;
+                    existingObstacle.Visual.Color = template.Color;
+                    existingObstacle.IsActive = true;
+                    
+                    // Update offsets
+                    Members[i].OffsetX = template.OffsetX;
+                    Members[i].OffsetY = template.OffsetY;
+                }
+                return;
+            }
+
+            // First time or count mismatch - need to recreate
             // Clear existing members (old FlowObjects will be garbage collected)
             Members.Clear();
 
@@ -102,8 +125,7 @@ namespace RaindropFall
                     if (isStillActive)
                     {
                         anyActive = true;
-                        // UpdateUI is called inside FlowObject.Update, but we ensure it's called here too
-                        Members[i].ChildObject.UpdateUI();
+                        // UpdateUI is already called inside FlowObject.Update(), no need to call it again
                     }
                 }
             }
@@ -130,7 +152,9 @@ namespace RaindropFall
                 member.ChildObject.Y = member.ChildObject.Y + member.OffsetY;
                 
                 // DEBUG: Log spawn information
+                #if DEBUG && !ANDROID
                 Debug.WriteLine($"[FLOWOBJECT SPAWN] Size: {member.ChildObject.Size}%, Speed: {member.ChildObject.Speed}, StartY: {member.ChildObject.Y:F4}, StartX: {member.ChildObject.X:F4}, OffsetX: {member.OffsetX:F4}, OffsetY: {member.OffsetY:F4}");
+                #endif
                 
                 // Ensure member is active and visible
                 member.ChildObject.IsActive = true;

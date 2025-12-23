@@ -140,6 +140,9 @@ namespace RaindropFall.Views
             CenterArea.WidthRequest = SceneProperties.GameWidth;
             CenterArea.HeightRequest = SceneProperties.GameHeight;
 
+            //Scene.WidthRequest = SceneProperties.GameWidth;
+            //Scene.HeightRequest = SceneProperties.GameHeight;
+
             _sceneInitialized = true;
             if (_pendingStart)
                 Start();

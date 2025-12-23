@@ -146,7 +146,7 @@ namespace RaindropFall
                 var obj = member.ChildObject;
                 if (!obj.IsActive) continue;
 
-                if (CheckForCollision(_playerCharacter.Visual, obj.Visual))
+                if (CheckForCollision(_playerCharacter, obj))
                 {
                     // Disable collided object
                     obj.IsActive = false;
@@ -167,49 +167,49 @@ namespace RaindropFall
         }
 
         /// <summary>
-        /// Checks if two VisualElements are colliding based on their Bounds
+        /// Checks if two GameObjects are colliding based on their position and size (proportional coordinates)
+        /// Uses math-based collision detection to avoid expensive Bounds property access
         /// </summary>
-        private bool CheckForCollision(VisualElement element1, VisualElement element2)
+        private bool CheckForCollision(GameObject obj1, GameObject obj2)
         {
-            // Get the absolute bounds of both elements
-            Rect bounds1 = element1.Bounds;
-            Rect bounds2 = element2.Bounds;
+            // Size is a percentage of screen width
+            // Convert to proportional coordinates: Size% / 100 = proportional size
+            double proportionalSize1 = obj1.Size / 100.0;
+            double proportionalSize2 = obj2.Size / 100.0;
+            
+            // Calculate half-sizes in proportional coordinates
+            double halfSize1X = proportionalSize1 / 2.0;
+            double halfSize2X = proportionalSize2 / 2.0;
+            
+            // For Y, we need to account for aspect ratio since Size is width-based
+            // Objects are squares in pixels, but proportional Y size depends on GameHeight
+            double aspectRatio = SceneProperties.GameHeight / SceneProperties.GameWidth;
+            double halfSize1Y = (proportionalSize1 / aspectRatio) / 2.0;
+            double halfSize2Y = (proportionalSize2 / aspectRatio) / 2.0;
 
-            // Check if the two rectangles intersect
-            return bounds1.IntersectsWith(bounds2);
+            // Check if rectangles overlap (using AABB collision detection)
+            bool overlapX = Math.Abs(obj1.X - obj2.X) < (halfSize1X + halfSize2X);
+            bool overlapY = Math.Abs(obj1.Y - obj2.Y) < (halfSize1Y + halfSize2Y);
+
+            return overlapX && overlapY;
         }
 
         // --- Other ---
 
         /// <summary>
         /// Spawn FlowGroup at a specified horizontal position
-        /// Ensures no intersections with player on spawn
+        /// Spawns at constant Y position 1.2
+        /// Optimized to avoid removing/adding UI elements (which causes expensive layout passes on Android)
         /// </summary>
         private void SpawnFlowGroup(FlowGroup group, double startX)
         {
-            // Store old member UI elements before recreating (Spawn will clear Members)
-            var oldVisuals = new List<BoxView>();
-            foreach (var member in group.Members)
-            {
-                oldVisuals.Add(member.ChildObject.Visual);
-            }
+            // Since RecreateMembers() now reuses existing objects, we don't need to remove/add visuals
+            // The same BoxView objects stay in the scene, we just update their properties
+            
+            // Spawn the group at the specified X position (Y will be set to 1.2 in Spawn)
+            group.Spawn(startX);
 
-            // Remove old member UI elements from scene
-            foreach (var visual in oldVisuals)
-            {
-                if (_scene.Children.Contains(visual))
-                {
-                    _scene.Children.Remove(visual);
-                }
-            }
-
-            // Check for intersections with player and adjust spawn position if needed
-            double safeX = FindSafeSpawnPosition(group, startX);
-
-            // Spawn the group (this will recreate all members as new FlowObjects)
-            group.Spawn(safeX);
-
-            // Add new member UI elements to scene
+            // Ensure all visuals are in the scene (only add if missing - should only happen on first spawn)
             foreach (var member in group.Members)
             {
                 if (!_scene.Children.Contains(member.ChildObject.Visual))
@@ -218,82 +218,9 @@ namespace RaindropFall
                 }
             }
 
+            #if DEBUG && !ANDROID
             Debug.WriteLine("Flow Group Spawned!");
-        }
-
-        /// <summary>
-        /// Finds a safe spawn position that doesn't intersect with the player
-        /// </summary>
-        private double FindSafeSpawnPosition(FlowGroup group, double preferredX)
-        {
-            // Helper function to check if a position is safe
-            bool IsPositionSafe(double testX)
-            {
-                // Create temporary members to test collision
-                var tempMembers = new List<GroupMember>();
-                foreach (var template in group.Members)
-                {
-                    var tempObstacle = new FlowObject(
-                        template.ChildObject.Visual.Color,
-                        template.ChildObject.Size,
-                        group.Speed);
-                    tempObstacle.Spawn(testX + template.OffsetX);
-                    tempObstacle.Y = tempObstacle.Y + template.OffsetY;
-                    
-                    // Add to scene temporarily so bounds are accurate
-                    _scene.Children.Add(tempObstacle.Visual);
-                    tempObstacle.UpdateUI();
-                    
-                    tempMembers.Add(new GroupMember
-                    {
-                        ChildObject = tempObstacle,
-                        OffsetX = template.OffsetX,
-                        OffsetY = template.OffsetY
-                    });
-                }
-
-                // Check for collisions
-                bool hasCollision = false;
-                foreach (var member in tempMembers)
-                {
-                    if (CheckForCollision(_playerCharacter.Visual, member.ChildObject.Visual))
-                    {
-                        hasCollision = true;
-                        break;
-                    }
-                }
-
-                // Clean up temp members
-                foreach (var member in tempMembers)
-                {
-                    if (_scene.Children.Contains(member.ChildObject.Visual))
-                    {
-                        _scene.Children.Remove(member.ChildObject.Visual);
-                    }
-                }
-
-                return !hasCollision;
-            }
-
-            // Check preferred position first
-            if (IsPositionSafe(preferredX))
-            {
-                return preferredX;
-            }
-
-            // Try alternative positions: left, right, then random
-            double[] alternatives = { 0.2, 0.8, _random.NextDouble() };
-            
-            foreach (double altX in alternatives)
-            {
-                if (IsPositionSafe(altX))
-                {
-                    return altX;
-                }
-            }
-
-            // If all positions intersect, return preferred (shouldn't happen often)
-            return preferredX;
+            #endif
         }
     }
 }

@@ -4,6 +4,7 @@ namespace RaindropFall
 {
     /// <summary>
     /// Class that will invoke some global events like "Update"
+    /// Uses optimized IDispatcherTimer with Stopwatch for accurate timing
     /// </summary>
     public static class GlobalEvents
     {
@@ -16,9 +17,11 @@ namespace RaindropFall
         // Fixed value
         private const double FixedDeltaTime = 1.0 / TargetFPS;
 
-        // '!' is a null-forgiving operator
-        // private static System.Timers.Timer globalTimer = null!;
-        private static IDispatcherTimer globalTimer;
+        // Timer for game loop
+        private static IDispatcherTimer? globalTimer;
+        
+        // Track the last tick time to calculate actual deltaTime (using Stopwatch for better performance)
+        private static Stopwatch stopwatch;
 
         // Global Events that some interactive game objects will subscribe to
         // '?' declares it as a nullable event
@@ -30,6 +33,7 @@ namespace RaindropFall
 
         /// <summary>
         /// Initializes and starts the game timer (Once per app load)
+        /// Uses IDispatcherTimer optimized for Android performance
         /// </summary>
         public static void InitializeTimer()
         {
@@ -44,8 +48,11 @@ namespace RaindropFall
             // Start the timer only if it's not already running
             if (!globalTimer.IsRunning)
             {
+                stopwatch = Stopwatch.StartNew();
                 globalTimer.Start();
+                #if DEBUG && !ANDROID
                 Debug.WriteLine("Global Timer Started");
+                #endif
             }
         }
 
@@ -55,21 +62,32 @@ namespace RaindropFall
         public static void Stop()
         {
             globalTimer?.Stop();
+            #if DEBUG && !ANDROID
             Debug.WriteLine("Global Timer Stopped");
+            #endif
         }
 
         /// <summary>
         /// Currently invokes the global "Update" event
+        /// Uses Stopwatch for accurate deltaTime calculation
         /// </summary>
-        private static void OnTick(object sender, EventArgs e)
+        private static void OnTick(object? sender, EventArgs e)
         {
-            // --- Main Body ---
-            double deltaTime = FixedDeltaTime;
+            // Calculate actual elapsed time since last tick using Stopwatch (more efficient on Android)
+            double actualDeltaTime = stopwatch.Elapsed.TotalSeconds;
+            stopwatch.Restart();
 
-            // Invoke the global Update event
+            // Clamp deltaTime to prevent huge spikes (e.g., if app was paused/resumed)
+            // Maximum deltaTime is 2x the target frame time to handle occasional delays
+            double maxDeltaTime = FixedDeltaTime * 2.0;
+            double deltaTime = Math.Min(actualDeltaTime, maxDeltaTime);
+
+            // Invoke the global Update event directly (we're already on UI thread)
             Update?.Invoke(deltaTime);
 
             // --- FPS Counter ---
+            // Disabled on Android to avoid performance issues with Debug.WriteLine
+            #if DEBUG && !ANDROID
             frames++;
             timeAccumulator += deltaTime;
             if (timeAccumulator >= 1.0)
@@ -78,6 +96,7 @@ namespace RaindropFall
                 frames = 0;
                 timeAccumulator = 0;
             }
+            #endif
         }
     }
 }
