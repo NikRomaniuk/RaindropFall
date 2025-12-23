@@ -5,7 +5,7 @@
         public App()
         {
             InitializeComponent();
-            GlobalEvents.InitializeTimer();
+            // Animation system is now started when game starts, not globally
         }
 
         protected override Window CreateWindow(IActivationState? activationState)

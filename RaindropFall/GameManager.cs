@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace RaindropFall
 {
-    public class GameManager
+    public class GameManager : IAnimatable
     {
         // --- Dependencies and Collections ---
 
@@ -28,6 +28,11 @@ namespace RaindropFall
         // Misc
         private bool _isGameOver;
         private readonly Random _random = new Random();
+
+        // New systems
+        private readonly CollisionSystem _collisionSystem = new CollisionSystem();
+        private double _collisionCheckAccumulator = 0;
+        private const double COLLISION_CHECK_INTERVAL = 0.016; // Check collisions every ~16ms (60 FPS)
 
         // --- Constructor ---
 
@@ -56,6 +61,9 @@ namespace RaindropFall
             _playerCharacter.HealthPercentChanged += hp => PlayerHealthPercentChanged?.Invoke(hp);
             PlayerHealthPercentChanged?.Invoke(_playerCharacter.HealthPercent);
 
+            // Register player with collision system
+            _collisionSystem.Register(_playerCharacter);
+
             // Test Group
             _testGroup = new FlowGroup(level.FallingSpeed);
             // Build the Group
@@ -69,6 +77,8 @@ namespace RaindropFall
             foreach (var member in _testGroup.Members)
             {
                 _scene.Children.Add(member.ChildObject.Visual);
+                // Register each obstacle with collision system
+                _collisionSystem.Register(member.ChildObject);
             }
 
             // --- Initial Spawn ---
@@ -80,33 +90,35 @@ namespace RaindropFall
         // --- Event Management ---
 
         /// <summary>
-        /// Subscribes to the Update
+        /// Starts the game loop using the new AnimationController
         /// </summary>
         public void StartGameLoop()
         {
-            GlobalEvents.Update += OnUpdate;
-            Debug.WriteLine("GameManager subscribed to Update");
+            AnimationController.Instance.Register(this);
+            AnimationController.Instance.Start();
+            Debug.WriteLine("GameManager registered with AnimationController");
         }
 
         /// <summary>
-        /// Unsubscribes from the Update
+        /// Stops the game loop
         /// </summary>
         public void StopGameLoop()
         {
-            GlobalEvents.Update -= OnUpdate;
-            Debug.WriteLine("GameManager unsubscribed from Update");
+            AnimationController.Instance.Unregister(this);
+            Debug.WriteLine("GameManager unregistered from AnimationController");
         }
 
         // --- Core Game Loop ---
 
         /// <summary>
-        /// Invokes every Frame
+        /// Called every animation frame (IAnimatable interface)
+        /// This replaces the Unity-like Update pattern
         /// </summary>
-        private void OnUpdate(double deltaTime)
+        public void OnAnimate(double deltaTime)
         {
             if (_isGameOver) return;
 
-            // Update the Group
+            // Check if the group is still active
             bool isStillActive = _testGroup.Update(deltaTime);
 
             if (!isStillActive)
@@ -115,10 +127,13 @@ namespace RaindropFall
                 SpawnFlowGroup(_testGroup, 0.5);
             }
 
-            // Update the Player
-            _playerCharacter.Update(deltaTime);
-
-            CheckCollisionsAndApplyDamage();
+            // Collision detection is now optimized - only check at intervals
+            _collisionCheckAccumulator += deltaTime;
+            if (_collisionCheckAccumulator >= COLLISION_CHECK_INTERVAL)
+            {
+                _collisionCheckAccumulator = 0;
+                CheckCollisionsAndApplyDamage();
+            }
         }
 
         // --- Player ---
@@ -136,16 +151,20 @@ namespace RaindropFall
         // Collision
 
         /// <summary>
-        /// Checks all possible Collisions and applies damage if needeed
-        /// Currently only checks for TestGroup collisions
+        /// Uses the new CollisionSystem for optimized collision detection
         /// </summary>
         private void CheckCollisionsAndApplyDamage()
         {
+            // Let the collision system handle the heavy lifting
+            _collisionSystem.CheckCollisions();
+
+            // Check for any collisions with the player
             foreach (var member in _testGroup.Members)
             {
                 var obj = member.ChildObject;
                 if (!obj.IsActive) continue;
 
+                // Manual check for player collision (collision system handles detection)
                 if (CheckForCollision(_playerCharacter, obj))
                 {
                     // Disable collided object
@@ -221,6 +240,16 @@ namespace RaindropFall
             #if DEBUG && !ANDROID
             Debug.WriteLine("Flow Group Spawned!");
             #endif
+        }
+
+        /// <summary>
+        /// Cleanup when game manager is disposed
+        /// </summary>
+        public void Dispose()
+        {
+            StopGameLoop();
+            _collisionSystem.Clear();
+            AnimationController.Instance.Clear();
         }
     }
 }

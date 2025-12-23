@@ -9,7 +9,7 @@ namespace RaindropFall
     public enum MoveState { Idle, Moving }      // Movement State
     public enum Direction { None, Left, Right}  // Movement Direction
 
-    public class Player : GameObject
+    public class Player : GameObject, IAnimatable, ICollidable
     {
         // --- Constants ---
         public const int OBJECT_ZINDEX = 50;   // Player Layer
@@ -30,6 +30,10 @@ namespace RaindropFall
         // --- Events ---
         public event Action<double>? HealthPercentChanged;
 
+        // --- ICollidable Implementation ---
+        public bool IsCollidable => IsActive && Health > 0;
+        public CollisionLayer CollisionLayer => CollisionLayer.Player;
+
         // Constructor
         public Player(double initialX, double initialY, double size, BoxView visual, double speed, double acceleration)
             : base(size)
@@ -45,20 +49,23 @@ namespace RaindropFall
 
             // Set ZIndex
             Visual.ZIndex = OBJECT_ZINDEX;
+
+            // Register with animation controller
+            AnimationController.Instance.Register(this);
         }
 
         /// <summary>
-        /// Called every frame to move the object. Returns False if object has despawned
+        /// Called every animation frame to move the player (IAnimatable interface)
         /// </summary>
-        public override bool Update(double deltaTime)
+        public void OnAnimate(double deltaTime)
         {
-            if (!IsActive) return false;
+            if (!IsActive) return;
 
             if (CurrentDirection == Direction.None)
             {
                 MovementState = MoveState.Idle;
                 CurrentSpeed = 0.0; // Reset speed when idle
-                return true;
+                return;
             }
 
             MovementState = MoveState.Moving;
@@ -91,8 +98,15 @@ namespace RaindropFall
             X = Math.Clamp(X, 0.0, 1.0);
 
             UpdateUI();
+        }
 
-            return true;
+        /// <summary>
+        /// Legacy Update method for compatibility - calls OnAnimate
+        /// </summary>
+        public override bool Update(double deltaTime)
+        {
+            OnAnimate(deltaTime);
+            return IsActive;
         }
 
         /// <summary>
@@ -162,6 +176,39 @@ namespace RaindropFall
 
             Health = Math.Clamp(Health - amount, 0, 100);
             HealthPercentChanged?.Invoke(HealthPercent);
+        }
+
+        // --- ICollidable Implementation ---
+        
+        public CollisionBounds GetBounds()
+        {
+            // Size is a percentage of screen width
+            double proportionalSize = Size / 100.0;
+            double halfSizeX = proportionalSize / 2.0;
+            
+            // Account for aspect ratio for Y
+            double aspectRatio = SceneProperties.GameHeight / SceneProperties.GameWidth;
+            double halfSizeY = (proportionalSize / aspectRatio) / 2.0;
+
+            return new CollisionBounds(X, Y, halfSizeX, halfSizeY);
+        }
+
+        public void OnCollisionEnter(ICollidable other)
+        {
+            // Collision handling is done by GameManager
+        }
+
+        public void OnCollisionExit(ICollidable other)
+        {
+            // Not needed for player
+        }
+
+        /// <summary>
+        /// Cleanup when player is destroyed
+        /// </summary>
+        public void Dispose()
+        {
+            AnimationController.Instance.Unregister(this);
         }
     }
 }

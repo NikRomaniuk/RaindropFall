@@ -76,7 +76,11 @@ namespace RaindropFall.Views
                 _gameManager.PlayerHealthPercentChanged -= OnPlayerHealthChanged;
                 _gameManager.GameOver -= OnGameOver;
                 _gameManager.StopGameLoop();
+                _gameManager.Dispose(); // Clean up new animation system
             }
+
+            // Stop the animation controller when leaving the game
+            AnimationController.Instance.Stop();
 
             // Detach key controls
             #if WINDOWS
